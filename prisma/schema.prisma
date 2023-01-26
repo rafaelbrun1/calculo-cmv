@@ -54,3 +54,75 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
+model Restaurant {
+  id      String  @id @default(cuid())
+  name    String
+  address String?
+  cnpj    String?
+
+  @@map("restaurant")
+}
+
+model Inputs {
+  id            String @id @default(cuid())
+  cod           String @unique
+  und           String
+  cost_in_cents Int
+  name          String
+
+  @@map("inputs")
+}
+
+model Products {
+  id                  String @id @default(cuid())
+  type                String
+  sell_price_in_cents Int
+  name                String
+
+  @@map("products")
+}
+
+model ProductsInputs {
+  id       String @id @default(cuid())
+  quantity Int
+
+  @@map("products_inputs")
+}
+
+model Groups {
+  id         String @id @default(cuid())
+  cod        Int
+  group_name String
+
+  @@map("groups")
+}
+
+model CurrentCmvUnt {
+  id                     String   @id @default(cuid())
+  cmv_teoric             Int
+  cmv_real               Int
+  created_at             DateTime
+  finished_at            DateTime
+  quantity_selled        Int
+  initial_input_counting Int
+  final_input_counting   Int
+  purchasing             Int
+
+  @@map("current_cmv_unit")
+}
+
+model CurrentCmvGlobal {
+  id         String @id @default(cuid())
+  global_cmv Int
+
+  @@map("current_cmv_global")
+}
+
+model CmvHistory {
+  id         String @id @default(cuid())
+  real_cmv   Int
+  teoric_cmv Int
+
+  @@map("cmv_history")
+}
