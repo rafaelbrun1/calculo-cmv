@@ -38,13 +38,14 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String       @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?      @unique
   emailVerified DateTime?
   image         String?
   accounts      Account[]
   sessions      Session[]
+  Restaurant    Restaurant[]
 }
 
 model VerificationToken {
@@ -56,73 +57,58 @@ model VerificationToken {
 }
 
 model Restaurant {
-  id      String  @id @default(cuid())
+  id      String   @id @default(cuid())
   name    String
   address String?
   cnpj    String?
+  userId  String
+  Inputs  Inputs[]
+  user    User     @relation(fields: [userId], references: [id])
 
   @@map("restaurant")
 }
 
 model Inputs {
-  id            String @id @default(cuid())
-  cod           String @unique
-  und           String
-  cost_in_cents Int
-  name          String
+  id             String           @id @default(cuid())
+  cod            String           @unique
+  und            String
+  cost_in_cents  Int
+  name           String
+  restaurantId   String
+  groupsId       String
+  ProductsInputs ProductsInputs[]
+  restaurant     Restaurant       @relation(fields: [restaurantId], references: [id])
+  group          Groups           @relation(fields: [groupsId], references: [id])
 
   @@map("inputs")
 }
 
 model Products {
-  id                  String @id @default(cuid())
+  id                  String           @id @default(cuid())
   type                String
   sell_price_in_cents Int
   name                String
+  ProductsInputs      ProductsInputs[]
 
   @@map("products")
 }
 
 model ProductsInputs {
-  id       String @id @default(cuid())
-  quantity Int
+  id         String   @id @default(cuid())
+  quantity   Int
+  productsId String
+  inputsId   String
+  product    Products @relation(fields: [productsId], references: [id])
+  input      Inputs   @relation(fields: [inputsId], references: [id])
 
   @@map("products_inputs")
 }
 
 model Groups {
-  id         String @id @default(cuid())
+  id         String   @id @default(cuid())
   cod        Int
   group_name String
+  Inputs     Inputs[]
 
   @@map("groups")
-}
-
-model CurrentCmvUnt {
-  id                     String   @id @default(cuid())
-  cmv_teoric             Int
-  cmv_real               Int
-  created_at             DateTime
-  finished_at            DateTime
-  quantity_selled        Int
-  initial_input_counting Int
-  final_input_counting   Int
-  purchasing             Int
-
-  @@map("current_cmv_unit")
-}
-
-model CurrentCmvGlobal {
-  id         String @id @default(cuid())
-  global_cmv Int
-
-  @@map("current_cmv_global")
-}
-
-model CmvHistory {
-  id         String @id @default(cuid())
-  real_cmv   Int
-  teoric_cmv Int
-
-  @@map("cmv_history")
 }
