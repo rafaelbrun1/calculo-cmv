@@ -6,7 +6,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { authOptions } from "../api/auth/[...nextauth].api";
 import { api } from "@/src/lib/axios";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 
+interface RestaurantProps {
+  id: string;
+  name: String;
+}
+interface RestaurantObject {
+  restaurants: RestaurantProps[];
+}
 const createRestaurantSchema = z.object({
   name: z.string(),
   address: z.string(),
@@ -18,6 +27,16 @@ type CreateRestaurantData = z.infer<typeof createRestaurantSchema>;
 export default function Dashboard() {
   const session = useSession();
   const userId = session.data?.user?.id;
+  const [restaurantsList, setRestaurantsList] = useState<RestaurantObject>();
+
+  const { data: restaurants } = useQuery<RestaurantObject>(
+    ["restaurants"],
+    async () => {
+      const response = await api.get("/dashboard/get-all-restaurants");
+      setRestaurantsList(response.data);
+      return response.data;
+    }
+  );
 
   const handleCreateRestaurant = (data: CreateRestaurantData) => {
     try {
@@ -28,7 +47,18 @@ export default function Dashboard() {
           cnpj: data.cnpj,
           userId,
         })
-        .then((res) => console.log(res));
+        .then((res) =>
+          setRestaurantsList((prev) => ({
+            ...prev,
+            restaurants: [
+              ...prev!.restaurants,
+              {
+                id: res.data.createRestaraunt.id,
+                name: res.data.createRestaraunt.name,
+              },
+            ],
+          }))
+        );
     } catch (error) {
       console.log(error);
     }
@@ -42,7 +72,7 @@ export default function Dashboard() {
     resolver: zodResolver(createRestaurantSchema),
   });
 
-  console.log(errors);
+  console.log(restaurants);
 
   return (
     <>
@@ -60,23 +90,29 @@ export default function Dashboard() {
         </button>
       </form>
 
-      <select name="restaurants">
-        <option value="volvo">Volvo</option>
-        <option value="saab">Saab</option>
-        <option value="mercedes">Mercedes</option>
-        <option value="audi">Audi</option>
-      </select>
-
-      Agora você está no restaurant X
+      {restaurantsList !== undefined &&
+      restaurantsList.restaurants.length > 0 ? (
+        <select name="restaurants">
+          {restaurantsList.restaurants.map((restaurant) => {
+            return (
+              <option key={restaurant.id}>
+                {restaurant.name}
+              </option>
+            );
+          })}
+        </select>
+      ) : (
+        <h1> você ainda não possui nenhum restaurante cadastrado </h1>
+      )}
     </>
   );
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
+/* export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   const session = await unstable_getServerSession(req, res, authOptions);
   return {
     props: {
       session,
     },
   };
-};
+}; */
