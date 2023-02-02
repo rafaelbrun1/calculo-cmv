@@ -1,5 +1,7 @@
 import { prisma } from "@/src/lib/prisma";
 import { NextApiRequest, NextApiResponse } from "next";
+import { unstable_getServerSession } from "next-auth";
+import { authOptions } from "../auth/[...nextauth].api";
 
 
 export default async function CreateRestaurant(
@@ -10,14 +12,20 @@ export default async function CreateRestaurant(
     return res.status(405).end();
   }
   
-  const {userId, name, address, cnpj } = req.body;
+  const {name, address, cnpj } = req.body;
+
+  const session = await unstable_getServerSession(req, res, authOptions);
+  
+  if (!session) { 
+    return res.status(404).end()
+  }
   
   const createRestaraunt = await prisma.restaurant.create({
     data: {
       name,
       address,
       cnpj,
-      userId,
+      userId: session.user.id,
     },
   });
 

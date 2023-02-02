@@ -1,13 +1,11 @@
-import { GetServerSideProps } from "next";
-import { unstable_getServerSession } from "next-auth";
 import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { authOptions } from "../api/auth/[...nextauth].api";
 import { api } from "@/src/lib/axios";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useRouter } from "next/router";
 
 interface RestaurantProps {
   id: string;
@@ -25,9 +23,11 @@ const createRestaurantSchema = z.object({
 type CreateRestaurantData = z.infer<typeof createRestaurantSchema>;
 
 export default function Dashboard() {
+  const router = useRouter();
   const session = useSession();
   const userId = session.data?.user?.id;
   const [restaurantsList, setRestaurantsList] = useState<RestaurantObject>();
+  const [selectedRestaurant, setSelectedRestaurant] = useState<string>();
 
   const { data: restaurants } = useQuery<RestaurantObject>(
     ["restaurants"],
@@ -67,12 +67,14 @@ export default function Dashboard() {
   const {
     register,
     handleSubmit,
-    formState: { isSubmitting, errors },
+    formState: { isSubmitting },
   } = useForm<CreateRestaurantData>({
     resolver: zodResolver(createRestaurantSchema),
   });
 
-  console.log(restaurants);
+  async function goToRestaurant() {
+    await router.push(`/${selectedRestaurant}/dashboard`);
+  }
 
   return (
     <>
@@ -92,10 +94,16 @@ export default function Dashboard() {
 
       {restaurantsList !== undefined &&
       restaurantsList.restaurants.length > 0 ? (
-        <select name="restaurants">
+        <select
+          value={selectedRestaurant}
+          onChange={(e) => setSelectedRestaurant(e.target.value)}
+        >
+          <option selected disabled>
+            escolha um restaurante
+          </option>
           {restaurantsList.restaurants.map((restaurant) => {
             return (
-              <option key={restaurant.id}>
+              <option key={restaurant.id} value={restaurant.id}>
                 {restaurant.name}
               </option>
             );
@@ -104,15 +112,11 @@ export default function Dashboard() {
       ) : (
         <h1> você ainda não possui nenhum restaurante cadastrado </h1>
       )}
+
+      <button onClick={goToRestaurant} disabled={!selectedRestaurant}>
+        Ir para esse restaurante
+      </button>
+      <h1> {selectedRestaurant}</h1>
     </>
   );
 }
-
-/* export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
-  const session = await unstable_getServerSession(req, res, authOptions);
-  return {
-    props: {
-      session,
-    },
-  };
-}; */
