@@ -26,7 +26,7 @@ export default function Dashboard() {
   const router = useRouter();
   const session = useSession();
   const userId = session.data?.user?.id;
-  const [restaurantsList, setRestaurantsList] = useState<RestaurantObject>();
+  const [restaurantsList, setRestaurantsList] = useState<RestaurantObject>({restaurants: []});
   const [selectedRestaurant, setSelectedRestaurant] = useState<string>();
 
   const { data: restaurants } = useQuery<RestaurantObject>(
@@ -51,7 +51,7 @@ export default function Dashboard() {
           setRestaurantsList((prev) => ({
             ...prev,
             restaurants: [
-              ...prev!.restaurants,
+              ...prev.restaurants,
               {
                 id: res.data.createRestaraunt.id,
                 name: res.data.createRestaraunt.name,

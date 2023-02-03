@@ -10,15 +10,20 @@ export default async function GetRestaurants(
     return res.status(405).end();
   }
 
+  const restaurantId = String(req.query.restaurant)
+
   const inputs = await prisma.inputs.findMany({ 
       select: { 
         id: true, 
         cod: true,
         cost_in_cents: true,
-        group: true,
+        groupsId: true,
         name: true,
         und: true,
-      }
+      }, 
+      where: { 
+        restaurantId 
+      },
   })
 
   return res.json( inputs )
