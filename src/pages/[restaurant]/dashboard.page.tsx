@@ -1,9 +1,7 @@
 import { prisma } from "@/src/lib/prisma";
 import { GetStaticPaths, GetStaticProps } from "next";
-import { unstable_getServerSession } from "next-auth";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
-import { authOptions } from "../api/auth/[...nextauth].api";
 
 interface RestaurantProps {
   restaurant: {
@@ -31,6 +29,10 @@ export default function Dashboard({ restaurant }: RestaurantProps) {
     },
   });
 
+  async function goToInputs() {
+    await router.push(`/${restaurant.id}/inputs`);
+  }
+
   if (status === "loading") {
     return "loading";
   }
@@ -39,7 +41,17 @@ export default function Dashboard({ restaurant }: RestaurantProps) {
     return <h1>Muito diferente fi</h1>;
   }
 
-  return <h1>Você está logado no restaurante {restaurant.name}</h1>;
+  return (
+    <>
+      <h1>Você está logado no restaurante {restaurant.name}</h1>
+      <div>
+        <button> Iniciar periodo </button>
+        <button>Finalizar período</button>
+      </div>
+
+      <button onClick={goToInputs}>Insumos</button>
+    </>
+  );
 }
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {

@@ -95,10 +95,11 @@ export default function Dashboard() {
       {restaurantsList !== undefined &&
       restaurantsList.restaurants.length > 0 ? (
         <select
+        defaultValue='default'
           value={selectedRestaurant}
           onChange={(e) => setSelectedRestaurant(e.target.value)}
         >
-          <option selected disabled>
+          <option value='default' disabled>
             escolha um restaurante
           </option>
           {restaurantsList.restaurants.map((restaurant) => {

@@ -70,15 +70,15 @@ model Restaurant {
 
 model Inputs {
   id             String           @id @default(cuid())
-  cod            String           @unique
+  cod            String?
   und            String
   cost_in_cents  Int
   name           String
   restaurantId   String
-  groupsId       String
+  groupsId       String?
   ProductsInputs ProductsInputs[]
   restaurant     Restaurant       @relation(fields: [restaurantId], references: [id])
-  group          Groups           @relation(fields: [groupsId], references: [id])
+  group          Groups?          @relation(fields: [groupsId], references: [id])
 
   @@map("inputs")
 }
