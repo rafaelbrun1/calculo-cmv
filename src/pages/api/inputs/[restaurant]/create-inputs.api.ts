@@ -7,7 +7,6 @@ import { authOptions } from "../../auth/[...nextauth].api";
 const createInputSchema = z.object({
   cod: z.string().nullable(),
   cost_in_cents: z.number(),
-  groupsId: z.string().optional(),
   name: z.string(),
   und: z.string(),
 });
@@ -28,14 +27,13 @@ export default async function CreateInput(
   const restaurantId = String(req.query.restaurant)
   console.log(restaurantId)
   
-  const { cod, cost_in_cents, groupsId, name, und } =
+  const { cod, cost_in_cents, name, und } =
     createInputSchema.parse(req.body);
 
   const inputs = await prisma.inputs.create({
     data: {
       cod,
       cost_in_cents,
-      groupsId,
       name,
       und,
       restaurantId,

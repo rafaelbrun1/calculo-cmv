@@ -8,9 +8,9 @@ import { z } from "zod";
 
 interface InputsProps {
   id: string;
-  cod: "lt" | "kg" | "und";
+  cod: string;
+  und: "lt" | "kg" | "und";
   cost_in_cents: number;
-  groupsId: string | null;
   name: string;
 }
 
@@ -19,7 +19,6 @@ const createInputSchema = z.object({
   und: z.string(),
   cost_in_cents: z.number(),
   name: z.string(),
-  groupsId: z.string().nullable(),
 });
 
 type createInputData = z.infer<typeof createInputSchema>;
@@ -37,7 +36,6 @@ export default function Inputs() {
           und: data.und,
           cost_in_cents: data.cost_in_cents,
           name: data.name,
-          groupId: data.groupsId,
         })
         .then((res) => setInputs((prev) => [res.data, ...prev]));
     } catch (error) {
@@ -69,16 +67,8 @@ export default function Inputs() {
     return <h1>loading</h1>;
   }
 
-  
   return (
     <>
-      <div>Lista de insumos</div>
-      <div>
-        {inputs &&
-          inputs.map((input) => {
-            return <h1 key={input.id}>{input.name}</h1>;
-          })}
-      </div>
       <button onClick={() => setCreateNewInput(true)}>
         Cadastrar novo insumo
       </button>
@@ -90,13 +80,6 @@ export default function Inputs() {
           placeholder="custo"
           {...register("cost_in_cents", { valueAsNumber: true })}
         />
-        <div>
-          <label htmlFor="group">Grupo</label>
-          <select {...register("groupsId")} id="group">
-            <option value="123"> Grupo exemplo</option>
-          </select>
-          <button> Criar grupo </button>
-        </div>
         <div>
           <label htmlFor="cod">Código</label>
           <input type="text" {...register("cod")} id="cod" />
@@ -111,6 +94,21 @@ export default function Inputs() {
         </div>
         <button type="submit"> criar novo insumo</button>
       </form>
+
+      <div>Lista de insumos</div>
+      <div>
+        {inputs &&
+          inputs.map((input) => {
+            return (
+              <div key={input.id}>
+                <span>Código: {input.cod} </span>
+                <span>Nome: {input.name} </span>
+                <span>Custo: {input.cost_in_cents} </span>
+                <span>Unidade: {input.und} </span>
+              </div>
+            );
+          })}
+      </div>
     </>
   );
 }

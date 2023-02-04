@@ -57,13 +57,14 @@ model VerificationToken {
 }
 
 model Restaurant {
-  id      String   @id @default(cuid())
-  name    String
-  address String?
-  cnpj    String?
-  userId  String
-  Inputs  Inputs[]
-  user    User     @relation(fields: [userId], references: [id])
+  id       String     @id @default(cuid())
+  name     String
+  address  String?
+  cnpj     String?
+  userId   String
+  Inputs   Inputs[]
+  user     User       @relation(fields: [userId], references: [id])
+  Products Products[]
 
   @@map("restaurant")
 }
@@ -75,10 +76,8 @@ model Inputs {
   cost_in_cents  Int
   name           String
   restaurantId   String
-  groupsId       String?
   ProductsInputs ProductsInputs[]
   restaurant     Restaurant       @relation(fields: [restaurantId], references: [id])
-  group          Groups?          @relation(fields: [groupsId], references: [id])
 
   @@map("inputs")
 }
@@ -88,6 +87,8 @@ model Products {
   type                String
   sell_price_in_cents Int
   name                String
+  restaurantId        String
+  restaurant          Restaurant       @relation(fields: [restaurantId], references: [id])
   ProductsInputs      ProductsInputs[]
 
   @@map("products")
@@ -102,13 +103,4 @@ model ProductsInputs {
   input      Inputs   @relation(fields: [inputsId], references: [id])
 
   @@map("products_inputs")
-}
-
-model Groups {
-  id         String   @id @default(cuid())
-  cod        Int
-  group_name String
-  Inputs     Inputs[]
-
-  @@map("groups")
 }

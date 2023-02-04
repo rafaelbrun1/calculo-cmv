@@ -17,7 +17,6 @@ export default async function GetRestaurants(
         id: true, 
         cod: true,
         cost_in_cents: true,
-        groupsId: true,
         name: true,
         und: true,
       }, 
