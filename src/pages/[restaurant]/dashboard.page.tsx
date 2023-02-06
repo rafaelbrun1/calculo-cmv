@@ -33,6 +33,10 @@ export default function Dashboard({ restaurant }: RestaurantProps) {
     await router.push(`/${restaurant.id}/inputs`);
   }
 
+  async function goToProducts() {
+    await router.push(`/${restaurant.id}/products`);
+  }
+
   if (status === "loading") {
     return "loading";
   }
@@ -50,6 +54,7 @@ export default function Dashboard({ restaurant }: RestaurantProps) {
       </div>
 
       <button onClick={goToInputs}>Insumos</button>
+      <button onClick={goToProducts}>Fichas Técnicas</button>
     </>
   );
 }

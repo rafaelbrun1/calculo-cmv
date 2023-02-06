@@ -31,7 +31,7 @@ export default function Inputs() {
   async function handleCreateInput(data: createInputData) {
     try {
       api
-        .post(`/inputs/${router.query.restaurant}/create-inputs`, {
+        .post(`/${router.query.restaurant}/inputs/create-inputs`, {
           cod: data.cod,
           und: data.und,
           cost_in_cents: data.cost_in_cents,
@@ -56,7 +56,7 @@ export default function Inputs() {
     ["inputslist"],
     async () => {
       const response = await api.get(
-        `inputs/${router.query.restaurant}/get-inputs`
+        `/${router.query.restaurant}/inputs/get-inputs`
       );
       setInputs(response.data);
       return response.data;

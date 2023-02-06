@@ -57,36 +57,39 @@ model VerificationToken {
 }
 
 model Restaurant {
-  id       String     @id @default(cuid())
-  name     String
-  address  String?
-  cnpj     String?
-  userId   String
-  Inputs   Inputs[]
-  user     User       @relation(fields: [userId], references: [id])
-  Products Products[]
+  id                      String                    @id @default(cuid())
+  name                    String
+  address                 String?
+  cnpj                    String?
+  userId                  String
+  Inputs                  Inputs[]
+  user                    User                      @relation(fields: [userId], references: [id])
+  Products                FinalProducts[]
+  ProcesedProducts        ProcesedProducts[]
+  ProcessedProductsInputs ProcessedProductsInputs[]
+  ProductsInputs          ProductsInputs[]
 
   @@map("restaurant")
 }
 
 model Inputs {
-  id             String           @id @default(cuid())
-  cod            String?
-  und            String
-  cost_in_cents  Int
-  name           String
-  restaurantId   String
-  ProductsInputs ProductsInputs[]
-  restaurant     Restaurant       @relation(fields: [restaurantId], references: [id])
+  id                      String                    @id @default(cuid())
+  cod                     String?
+  und                     String
+  cost_in_cents           Int
+  name                    String
+  restaurantId            String
+  ProductsInputs          ProductsInputs[]
+  restaurant              Restaurant                @relation(fields: [restaurantId], references: [id])
+  ProcessedProductsInputs ProcessedProductsInputs[]
 
   @@map("inputs")
 }
 
-model Products {
+model FinalProducts {
   id                  String           @id @default(cuid())
-  type                String
-  sell_price_in_cents Int
   name                String
+  sell_price_in_cents Int
   restaurantId        String
   restaurant          Restaurant       @relation(fields: [restaurantId], references: [id])
   ProductsInputs      ProductsInputs[]
@@ -94,13 +97,42 @@ model Products {
   @@map("products")
 }
 
+model ProcesedProducts {
+  id                      String                    @id @default(cuid())
+  name                    String
+  sell_price_in_cents     Int
+  restaurantId            String
+  restaurant              Restaurant                @relation(fields: [restaurantId], references: [id])
+  ProcessedProductsInputs ProcessedProductsInputs[]
+  ProductsInputs          ProductsInputs[]
+
+  @@map("processed_inputs")
+}
+
+model ProcessedProductsInputs {
+  id                 String           @id @default(cuid())
+  quantity           Int
+  inputsId           String
+  procesedProductsId String
+  restaurant         Restaurant       @relation(fields: [restaurantId], references: [id])
+  processedProducts  ProcesedProducts @relation(fields: [procesedProductsId], references: [id])
+  inputs             Inputs           @relation(fields: [inputsId], references: [id])
+  restaurantId       String
+
+  @@map("processed_products_inputs")
+}
+
 model ProductsInputs {
-  id         String   @id @default(cuid())
-  quantity   Int
-  productsId String
-  inputsId   String
-  product    Products @relation(fields: [productsId], references: [id])
-  input      Inputs   @relation(fields: [inputsId], references: [id])
+  id                 String            @id @default(cuid())
+  quantity           Int
+  final_productsId   String
+  inputsId           String
+  procesedProductsId String?
+  restaurantId       String
+  restaurant         Restaurant        @relation(fields: [restaurantId], references: [id])
+  processedProducts  ProcesedProducts? @relation(fields: [procesedProductsId], references: [id])
+  product            FinalProducts     @relation(fields: [final_productsId], references: [id])
+  input              Inputs            @relation(fields: [inputsId], references: [id])
 
   @@map("products_inputs")
 }
