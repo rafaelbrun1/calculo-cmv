@@ -114,10 +114,10 @@ model ProcessedProductsInputs {
   quantity           Int
   inputsId           String
   procesedProductsId String
+  restaurantId       String
   restaurant         Restaurant       @relation(fields: [restaurantId], references: [id])
   processedProducts  ProcesedProducts @relation(fields: [procesedProductsId], references: [id])
   inputs             Inputs           @relation(fields: [inputsId], references: [id])
-  restaurantId       String
 
   @@map("processed_products_inputs")
 }
@@ -126,13 +126,13 @@ model ProductsInputs {
   id                 String            @id @default(cuid())
   quantity           Int
   final_productsId   String
-  inputsId           String
+  inputsId           String?
   procesedProductsId String?
   restaurantId       String
   restaurant         Restaurant        @relation(fields: [restaurantId], references: [id])
   processedProducts  ProcesedProducts? @relation(fields: [procesedProductsId], references: [id])
   product            FinalProducts     @relation(fields: [final_productsId], references: [id])
-  input              Inputs            @relation(fields: [inputsId], references: [id])
+  input              Inputs?           @relation(fields: [inputsId], references: [id])
 
   @@map("products_inputs")
 }
