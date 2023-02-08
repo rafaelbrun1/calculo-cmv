@@ -8,6 +8,15 @@ import Modal from "react-modal";
 import Select from "react-select";
 import { z } from "zod";
 
+interface optionsProps {
+  value: string;
+  label: string;
+}
+interface groupedOptionProps {
+  label: string;
+  options: optionsProps[];
+}
+
 interface InputsProps {
   id: string;
   cod: string;
@@ -17,13 +26,15 @@ interface InputsProps {
 }
 
 const createProductSchema = z.object({
-  type: z.string(), 
-  name: z.string(), 
-  input: z.object({ 
-    value: z.string(),
-    label: z.string(),
-  }),
-  quantity: z.number().array()
+  type: z.string(),
+  product_name: z.string(),
+  input: z
+    .object({
+      value: z.string(),
+      label: z.string(),
+    })
+    .array(),
+  quantity: z.number().array(),
 });
 
 type createProductData = z.infer<typeof createProductSchema>;
@@ -40,14 +51,6 @@ const customStyles = {
     transform: "translate(-50%, -50%)",
   },
 };
-interface optionsProps {
-  value: string;
-  label: string;
-}
-interface groupedOptionProps {
-  label: string;
-  options: optionsProps[];
-}
 
 export default function Products() {
   const {
@@ -57,7 +60,7 @@ export default function Products() {
     formState: { errors },
   } = useForm<createProductData>({
     resolver: zodResolver(createProductSchema),
-  });;
+  });
 
   const { fields, append, remove } = useFieldArray({
     name: "input",
@@ -66,13 +69,12 @@ export default function Products() {
 
   const [inputs, setInputs] = useState<InputsProps[]>([]);
   const router = useRouter();
+  const restaurantURL = String(router.query.restaurant);
 
   const { status, data: inputslist } = useQuery<InputsProps[]>(
     ["inputslist"],
     async () => {
-      const response = await api.get(
-        `/${router.query.restaurant}/inputs/get-inputs`
-      );
+      const response = await api.get(`/${restaurantURL}/inputs/get-inputs`);
       setInputs(response.data);
       return response.data;
     }
@@ -100,15 +102,16 @@ export default function Products() {
     setIsOpen(false);
   }
 
-  function test(data: any) {
-    console.log(data);
-  }
+  function test(data: createProductData) {
+    if (errors) { 
+      console.log(errors)
+    }
 
+    console.log(data)
+  }
   return (
     <>
-    {status === 'loading' && ( 
-       <h1>Loading</h1>
-      )}
+      {status === "loading" && <h1>Loading</h1>}
 
       <h1>Lista de produtos finais</h1>
       <h1>Lista de produtos processados</h1>
@@ -124,49 +127,52 @@ export default function Products() {
         >
           <button onClick={closeModal}>close</button>
           <form onSubmit={handleSubmit(test)}>
-            <select {...register('type')}>
+            <select {...register("type" as const)}>
               <option value="final">Prato final</option>
               <option value="processado">Produto Processado</option>
             </select>
 
-            <input type="text" placeholder="Nome do produto" {...register('name')}/>
+            <input
+              type="text"
+              placeholder="Nome do produto"
+              {...register("product_name")}
+            />
             {fields.map((input, index) => {
               return (
-                <>
-                  <div key={input.id}>
-                    <Controller
-                      control={control}
-                      name={`input.${index}`}
-                      render={({ field: { onChange, value } }) => (
-                        <Select
-                          options={groupedOptions}
-                          value={groupedOptions.find(
-                            (c) =>
-                              value ===
-                              c.options.find((item) => item.value === value)
-                          )}
-                          onChange={onChange}
-                        />
-                      )}
-                    />
+                <div key={input.id}>
+                  <Controller
+                    control={control}
+                    name={`input.${index}` as const}
+                    render={({ field: { onChange, value } }) => (
+                      <Select
+                        options={groupedOptions}
+                        value={groupedOptions.find(
+                          (c) =>
+                            value ===
+                            c.options.find((item) => item.value === value.value)
+                        )}
+                        onChange={onChange}
+                      />
+                    )}
+                  />
 
-                    <input
-                      type="number"
-                      {...register(`quantity.${index}`)}
-                      placeholder="Quantidade"
-                    />
-                    <button type="button" onClick={() => remove(index)}>REMOVER</button>
-                  </div> 
-                </>
+                  <input
+                    type="number"
+                    {...register(`quantity.${index}` as const, { valueAsNumber: true})}
+                    placeholder="Quantidade"
+                  />
+                  <button type="button" onClick={() => remove(index)}>
+                    REMOVER
+                  </button>
+                </div>
               );
             })}
             <button
               type="button"
               onClick={() =>
                 append({
-                  name: "",
-                  quantity: 0,
-  
+                  value: "",
+                  label: "",
                 })
               }
             >
