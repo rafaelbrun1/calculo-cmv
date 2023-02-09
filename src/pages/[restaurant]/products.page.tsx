@@ -106,8 +106,15 @@ export default function Products() {
     if (errors) { 
       console.log(errors)
     }
-
-    console.log(data)
+      try {
+        api.post(`/${restaurantURL}/products/create-final-products`, { 
+            product_name: data.product_name,
+            input: data.input,
+            quantity: data.quantity,
+        } )
+      } catch (error) {
+        console.log(error)
+      }
   }
   return (
     <>
