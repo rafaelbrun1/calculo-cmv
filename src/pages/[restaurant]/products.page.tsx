@@ -32,12 +32,14 @@ const createProductSchema = z.object({
     .object({
       value: z.string(),
       label: z.string(),
+      quantity: z.number()
     })
     .array(),
-  quantity: z.number().array(),
+  
 });
 
 type createProductData = z.infer<typeof createProductSchema>;
+
 
 const customStyles = {
   content: {
@@ -103,7 +105,7 @@ export default function Products() {
   }
 
   function test(data: createProductData) {
-    if (errors) { 
+    /*if (errors) { 
       console.log(errors)
     }
       try {
@@ -114,8 +116,12 @@ export default function Products() {
         } )
       } catch (error) {
         console.log(error)
-      }
+      }*/
+
+      console.log(data)
   }
+
+
   return (
     <>
       {status === "loading" && <h1>Loading</h1>}
@@ -165,8 +171,10 @@ export default function Products() {
 
                   <input
                     type="number"
-                    {...register(`quantity.${index}` as const, { valueAsNumber: true})}
-                    placeholder="Quantidade"
+                    {...register(`input.${index}.quantity` as const, { valueAsNumber: true } )}
+                    placeholder="Quantidade" 
+                    
+                    
                   />
                   <button type="button" onClick={() => remove(index)}>
                     REMOVER
@@ -178,6 +186,7 @@ export default function Products() {
               type="button"
               onClick={() =>
                 append({
+                  quantity: "",
                   value: "",
                   label: "",
                 })
@@ -186,7 +195,10 @@ export default function Products() {
               APPEND
             </button>
             <button type="submit">Cadastrar produto</button>
+          
           </form>
+
+          
         </Modal>
       </div>
     </>

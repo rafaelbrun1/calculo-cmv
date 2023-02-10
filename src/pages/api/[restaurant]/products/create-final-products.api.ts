@@ -42,7 +42,13 @@ export default async function CreateFinalProduct(
     },
   });
 
-  console.log(inputs_price)
-  
+  const inputs_price_multiplied_by_quantity = inputs_price.map((input, index) => { 
+      return input.cost_in_cents * quantity[index]
+  })
+
+  const product_sell_price_in_cents = inputs_price_multiplied_by_quantity.reduce((acc, cur) => acc + cur)
+
+  console.log(inputs_price, inputs_price_multiplied_by_quantity, quantity)
+
   return res.json(inputs_price);
 }
