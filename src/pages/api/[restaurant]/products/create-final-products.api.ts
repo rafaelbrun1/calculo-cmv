@@ -10,9 +10,9 @@ const createProductSchema = z.object({
     .object({
       value: z.string(),
       label: z.string(),
+      quantity: z.number(),
     })
     .array(),
-  quantity: z.number().array(),
 });
 
 export default async function CreateFinalProduct(
@@ -30,10 +30,11 @@ export default async function CreateFinalProduct(
   }
   const restaurantId = String(req.query.restaurant);
 
-  const { input, product_name, quantity } = createProductSchema.parse(req.body);
+  const { input, product_name } = createProductSchema.parse(req.body);
 
   const inputs_price = await prisma.inputs.findMany({
     select: {
+      id: true,
       name: true,
       cost_in_cents: true,
     },
@@ -42,13 +43,20 @@ export default async function CreateFinalProduct(
     },
   });
 
-  const inputs_price_multiplied_by_quantity = inputs_price.map((input, index) => { 
-      return input.cost_in_cents * quantity[index]
-  })
+  const output = input.reduce((accumulator, item) => {
+    const product = inputs_price.find(p => p.id === item.value);
+    if (product) {
+      accumulator.push({
+        id: item.value,
+        price_multiplied_by_quantity: product.cost_in_cents * item.quantity
+      });
+    }
+    return accumulator;
+  }, [{}]);
 
-  const product_sell_price_in_cents = inputs_price_multiplied_by_quantity.reduce((acc, cur) => acc + cur)
+  /*const product_sell_price_in_cents = inputs_price_multiplied_by_quantity.reduce((acc, cur) => acc + cur)*/
 
-  console.log(inputs_price, inputs_price_multiplied_by_quantity, quantity)
+  console.log(output )
 
   return res.json(inputs_price);
 }

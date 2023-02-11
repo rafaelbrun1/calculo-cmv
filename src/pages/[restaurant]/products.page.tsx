@@ -105,18 +105,17 @@ export default function Products() {
   }
 
   function test(data: createProductData) {
-    /*if (errors) { 
+    if (errors) { 
       console.log(errors)
     }
       try {
         api.post(`/${restaurantURL}/products/create-final-products`, { 
             product_name: data.product_name,
             input: data.input,
-            quantity: data.quantity,
         } )
       } catch (error) {
         console.log(error)
-      }*/
+      }
 
       console.log(data)
   }
@@ -186,7 +185,7 @@ export default function Products() {
               type="button"
               onClick={() =>
                 append({
-                  quantity: "",
+                  quantity: 0,
                   value: "",
                   label: "",
                 })
