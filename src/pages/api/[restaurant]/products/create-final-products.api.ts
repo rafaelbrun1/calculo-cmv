@@ -43,7 +43,7 @@ export default async function CreateFinalProduct(
     },
   });
 
-  const output = input.reduce((accumulator, item) => {
+  const inputs_price_multiplied_by_quantity = input.reduce((accumulator, item) => {
     const product = inputs_price.find(p => p.id === item.value);
     if (product) {
       accumulator.push({
@@ -52,11 +52,20 @@ export default async function CreateFinalProduct(
       });
     }
     return accumulator;
-  }, [{}]);
+  }, [{id: '', price_multiplied_by_quantity: 0}]);
 
-  /*const product_sell_price_in_cents = inputs_price_multiplied_by_quantity.reduce((acc, cur) => acc + cur)*/
+  const sell_price_in_cents = inputs_price_multiplied_by_quantity.reduce((accumulator, currentValue) => accumulator + currentValue.price_multiplied_by_quantity, 0);
 
-  console.log(output )
+
+  const final_product = await prisma.finalProducts.create({ 
+    data: { 
+      name: product_name,
+      sell_price_in_cents,
+      restaurantId
+    }
+  })
+
+  console.log(final_product)
 
   return res.json(inputs_price);
 }
