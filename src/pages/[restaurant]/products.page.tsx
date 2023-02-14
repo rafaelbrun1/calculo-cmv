@@ -1,6 +1,7 @@
 import { api } from "@/src/lib/axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
+import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
@@ -25,6 +26,10 @@ interface InputsProps {
   name: string;
 }
 
+interface InputsListProps extends InputsProps {
+  inputslist: InputsProps[];
+}
+
 const createProductSchema = z.object({
   type: z.string(),
   product_name: z.string(),
@@ -32,14 +37,12 @@ const createProductSchema = z.object({
     .object({
       value: z.string(),
       label: z.string(),
-      quantity: z.number()
+      quantity: z.number(),
     })
     .array(),
-  
 });
 
 type createProductData = z.infer<typeof createProductSchema>;
-
 
 const customStyles = {
   content: {
@@ -54,7 +57,8 @@ const customStyles = {
   },
 };
 
-export default function Products() {
+export default function Products({inputslist}: InputsListProps ) {
+  
   const {
     register,
     control,
@@ -69,20 +73,10 @@ export default function Products() {
     control,
   });
 
-  const [inputs, setInputs] = useState<InputsProps[]>([]);
   const router = useRouter();
   const restaurantURL = String(router.query.restaurant);
 
-  const { status, data: inputslist } = useQuery<InputsProps[]>(
-    ["inputslist"],
-    async () => {
-      const response = await api.get(`/${restaurantURL}/inputs/get-inputs`);
-      setInputs(response.data);
-      return response.data;
-    }
-  );
-
-  const newInputListFormatt = inputs.map((input) => ({
+  const newInputListFormatt = inputslist.map((input) => ({
     value: input.id,
     label: input.name,
   }));
@@ -105,26 +99,23 @@ export default function Products() {
   }
 
   function test(data: createProductData) {
-    if (errors) { 
-      console.log(errors)
+    if (errors) {
+      console.log(errors);
     }
-      try {
-        api.post(`/${restaurantURL}/products/create-final-products`, { 
-            product_name: data.product_name,
-            input: data.input,
-        } )
-      } catch (error) {
-        console.log(error)
-      }
+    try {
+      api.post(`/${restaurantURL}/products/create-final-products`, {
+        product_name: data.product_name,
+        input: data.input,
+      });
+    } catch (error) {
+      console.log(error);
+    }
 
-      console.log(data)
+    console.log(data);
   }
-
 
   return (
     <>
-      {status === "loading" && <h1>Loading</h1>}
-
       <h1>Lista de produtos finais</h1>
       <h1>Lista de produtos processados</h1>
 
@@ -170,10 +161,10 @@ export default function Products() {
 
                   <input
                     type="number"
-                    {...register(`input.${index}.quantity` as const, { valueAsNumber: true } )}
-                    placeholder="Quantidade" 
-                    
-                    
+                    {...register(`input.${index}.quantity` as const, {
+                      valueAsNumber: true,
+                    })}
+                    placeholder="Quantidade"
                   />
                   <button type="button" onClick={() => remove(index)}>
                     REMOVER
@@ -194,12 +185,33 @@ export default function Products() {
               APPEND
             </button>
             <button type="submit">Cadastrar produto</button>
-          
           </form>
-
-          
         </Modal>
       </div>
     </>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const restaurantURL = String(context.query.restaurant);
+
+  console.log(restaurantURL);
+
+  try {
+    const response = await api.get(`/${restaurantURL}/inputs/get-inputs`);
+    const inputslist = response.data;
+    console.log(inputslist)
+    return {
+      props: {
+        inputslist,
+      },
+    };
+  } catch (error) {
+    console.log(error);
+    return {
+      props: {
+        error: JSON.stringify(error),
+      },
+    };
+  }
+};

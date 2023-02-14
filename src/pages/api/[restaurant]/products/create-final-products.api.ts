@@ -43,29 +43,35 @@ export default async function CreateFinalProduct(
     },
   });
 
-  const inputs_price_multiplied_by_quantity = input.reduce((accumulator, item) => {
-    const product = inputs_price.find(p => p.id === item.value);
-    if (product) {
-      accumulator.push({
-        id: item.value,
-        price_multiplied_by_quantity: product.cost_in_cents * item.quantity
-      });
-    }
-    return accumulator;
-  }, [{id: '', price_multiplied_by_quantity: 0}]);
+  const inputs_price_multiplied_by_quantity = input.reduce(
+    (accumulator, item) => {
+      const product = inputs_price.find((p) => p.id === item.value);
+      if (product) {
+        accumulator.push({
+          id: item.value,
+          price_multiplied_by_quantity: product.cost_in_cents * item.quantity,
+        });
+      }
+      return accumulator;
+    },
+    [{ id: "", price_multiplied_by_quantity: 0 }]
+  );
 
-  const sell_price_in_cents = inputs_price_multiplied_by_quantity.reduce((accumulator, currentValue) => accumulator + currentValue.price_multiplied_by_quantity, 0);
+  const sell_price_in_cents = inputs_price_multiplied_by_quantity.reduce(
+    (accumulator, currentValue) =>
+      accumulator + currentValue.price_multiplied_by_quantity,
+    0
+  );
 
-
-  const final_product = await prisma.finalProducts.create({ 
-    data: { 
+  const final_product = await prisma.finalProducts.create({
+    data: {
       name: product_name,
       sell_price_in_cents,
-      restaurantId
-    }
-  })
+      restaurantId,
+    },
+  });
 
-  console.log(final_product)
+  console.log(final_product);
 
   return res.json(inputs_price);
 }
