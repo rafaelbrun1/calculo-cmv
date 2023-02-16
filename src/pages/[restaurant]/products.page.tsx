@@ -99,9 +99,7 @@ export default function Products({inputslist}: InputsListProps ) {
   }
 
   function test(data: createProductData) {
-    if (errors) {
-      console.log(errors);
-    }
+    if (data.type === 'final') { 
     try {
       api.post(`/${restaurantURL}/products/create-final-products`, {
         product_name: data.product_name,
@@ -110,8 +108,16 @@ export default function Products({inputslist}: InputsListProps ) {
     } catch (error) {
       console.log(error);
     }
-
-    console.log(data);
+  }
+  try {
+    api.post(`/${restaurantURL}/processedproducts/create-processed-products`, {
+      product_name: data.product_name,
+      input: data.input,
+    });
+  } catch (error) {
+    console.log(error);
+  }
+    
   }
 
   return (
