@@ -1,6 +1,6 @@
 import { api } from "@/src/lib/axios";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, QueryClient, useMutation } from "@tanstack/react-query";
 import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import { useState } from "react";
@@ -8,6 +8,7 @@ import { Controller, useFieldArray, useForm } from "react-hook-form";
 import Modal from "react-modal";
 import Select from "react-select";
 import { z } from "zod";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface optionsProps {
   value: string;
@@ -28,6 +29,12 @@ interface InputsProps {
 
 interface InputsListProps extends InputsProps {
   inputslist: InputsProps[];
+}
+
+interface ProductsProps {
+  id: string;
+  name: string;
+  sell_price_in_cents: number;
 }
 
 const createProductSchema = z.object({
@@ -57,12 +64,12 @@ const customStyles = {
   },
 };
 
-export default function Products({inputslist}: InputsListProps ) {
-  
+export default function Products({ inputslist }: InputsListProps) {
   const {
     register,
     control,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<createProductData>({
     resolver: zodResolver(createProductSchema),
@@ -88,6 +95,27 @@ export default function Products({inputslist}: InputsListProps ) {
     },
   ];
 
+  const {
+    status,
+    data: final_products,
+    refetch,
+  } = useQuery<ProductsProps[]>(["final_products"], async () => {
+    const response = await api.get(
+      `/${router.query.restaurant}/products/get-final-products`
+    );
+    return response.data;
+  });
+
+  const { data: processed_products } = useQuery<ProductsProps[]>(
+    ["processed_products"],
+    async () => {
+      const response = await api.get(
+        `/${router.query.restaurant}/processedproducts/get-processed-products`
+      );
+      return response.data;
+    }
+  );
+
   const [modalIsOpen, setIsOpen] = useState(false);
 
   function openModal() {
@@ -98,32 +126,77 @@ export default function Products({inputslist}: InputsListProps ) {
     setIsOpen(false);
   }
 
-  function test(data: createProductData) {
-    if (data.type === 'final') { 
-    try {
-      api.post(`/${restaurantURL}/products/create-final-products`, {
-        product_name: data.product_name,
-        input: data.input,
-      });
-    } catch (error) {
-      console.log(error);
+  const queryClient = useQueryClient();
+
+  const onSubmit = async (data: createProductData) => {
+    if (data.type === "final") {
+      try {
+        await api.post(`/${restaurantURL}/products/create-final-products`, {
+          product_name: data.product_name,
+          input: data.input,
+        });
+        queryClient.invalidateQueries(["final_products"]);
+      } catch (error) {
+        console.log(error);
+      }
+    } else if (data.type === "processed") {
+      try {
+        await api.post(
+          `/${restaurantURL}/processedproducts/create-processed-products`,
+          {
+            product_name: data.product_name,
+            input: data.input,
+          }
+        );
+      } catch (error) {
+        console.log(error);
+      }
     }
-  }
-  try {
-    api.post(`/${restaurantURL}/processedproducts/create-processed-products`, {
-      product_name: data.product_name,
-      input: data.input,
-    });
-  } catch (error) {
-    console.log(error);
-  }
-    
+  };
+
+  async function deleteFinalProduct(id: string) {
+    if (confirm("Tem certeza que deseja excluir esse produto?")) {
+      await api.delete(`${restaurantURL}/products/delete-final-product`, {
+        data: {
+          id,
+        },
+      });
+      refetch();
+    } else {
+      console.log("cancelado");
+    }
   }
 
   return (
     <>
-      <h1>Lista de produtos finais</h1>
+      <h1> Lista de produtos finais</h1>
+      {final_products &&
+        final_products.map((product) => {
+          return (
+            <div>
+              <span> {product.name} </span>
+              <span> {product.sell_price_in_cents} </span>
+              <button> Editar </button>
+              <button onClick={() => deleteFinalProduct(product.id)}>
+                {" "}
+                Excluir{" "}
+              </button>
+            </div>
+          );
+        })}
       <h1>Lista de produtos processados</h1>
+
+      {processed_products &&
+        processed_products.map((item) => {
+          return (
+            <div>
+              <span> {item.name} </span>
+              <span> {item.sell_price_in_cents} </span>
+              <button> Editar </button>
+              <button> Excluir </button>
+            </div>
+          );
+        })}
 
       <div>
         <button onClick={openModal}>Criar produto</button>
@@ -135,7 +208,7 @@ export default function Products({inputslist}: InputsListProps ) {
           ariaHideApp={false}
         >
           <button onClick={closeModal}>close</button>
-          <form onSubmit={handleSubmit(test)}>
+          <form onSubmit={handleSubmit(onSubmit)}>
             <select {...register("type" as const)}>
               <option value="final">Prato final</option>
               <option value="processado">Produto Processado</option>
@@ -206,7 +279,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   try {
     const response = await api.get(`/${restaurantURL}/inputs/get-inputs`);
     const inputslist = response.data;
-    console.log(inputslist)
+    console.log(inputslist);
     return {
       props: {
         inputslist,
