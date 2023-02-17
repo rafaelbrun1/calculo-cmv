@@ -139,7 +139,7 @@ export default function Products({ inputslist }: InputsListProps) {
       } catch (error) {
         console.log(error);
       }
-    } else if (data.type === "processed") {
+    } else if (data.type === "processado") {
       try {
         await api.post(
           `/${restaurantURL}/processedproducts/create-processed-products`,
@@ -147,7 +147,8 @@ export default function Products({ inputslist }: InputsListProps) {
             product_name: data.product_name,
             input: data.input,
           }
-        );
+        )
+        queryClient.invalidateQueries(["processed_products"]);
       } catch (error) {
         console.log(error);
       }
