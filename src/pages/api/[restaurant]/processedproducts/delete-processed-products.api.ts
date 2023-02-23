@@ -11,19 +11,17 @@ export default async function DeleteFinalProduct(
 
   const { id } = req.body;
 
-  await prisma.productsInputs.deleteMany({ 
-    where: { 
-      final_productsId: id,
-    }
-  })
+  await prisma.processedProductsInputs.deleteMany({
+    where: {
+      procesedProductsId: id,
+    },
+  });
 
-  await prisma.finalProducts.delete({
+  await prisma.procesedProducts.delete({
     where: {
       id,
     },
   });
-
- 
 
   return res.json({ Message: `${id} deletado` });
 }

@@ -71,6 +71,19 @@ export default async function CreateFinalProduct(
     },
   });
 
+  const create_products_inputs = input.map((item) => { 
+    return prisma.processedProductsInputs.create({ 
+     data: { 
+       quantity: item.quantity,
+       inputsId: item.value,
+       procesedProductsId: processed_product.id,
+       restaurantId,
+     }
+   })
+ })
+
+ Promise.all(create_products_inputs)
+
   console.log(processed_product);
 
   return res.json(inputs_price);

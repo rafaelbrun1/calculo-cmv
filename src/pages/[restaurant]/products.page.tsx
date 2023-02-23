@@ -147,7 +147,7 @@ export default function Products({ inputslist }: InputsListProps) {
             product_name: data.product_name,
             input: data.input,
           }
-        )
+        );
         queryClient.invalidateQueries(["processed_products"]);
       } catch (error) {
         console.log(error);
@@ -162,7 +162,23 @@ export default function Products({ inputslist }: InputsListProps) {
           id,
         },
       });
-      refetch();
+      queryClient.invalidateQueries(["final_products"]);
+    } else {
+      console.log("cancelado");
+    }
+  }
+
+  async function deleteProcessedProduct(id: string) {
+    if (confirm("Tem certeza que deseja excluir esse produto?")) {
+      await api.delete(
+        `${restaurantURL}/processedproducts/delete-processed-products`,
+        {
+          data: {
+            id,
+          },
+        }
+      );
+      queryClient.invalidateQueries(["processed_products"]);
     } else {
       console.log("cancelado");
     }
@@ -174,7 +190,7 @@ export default function Products({ inputslist }: InputsListProps) {
       {final_products &&
         final_products.map((product) => {
           return (
-            <div>
+            <div key={product.id}>
               <span> {product.name} </span>
               <span> {product.sell_price_in_cents} </span>
               <button> Editar </button>
@@ -190,11 +206,14 @@ export default function Products({ inputslist }: InputsListProps) {
       {processed_products &&
         processed_products.map((item) => {
           return (
-            <div>
+            <div key={item.id}>
               <span> {item.name} </span>
               <span> {item.sell_price_in_cents} </span>
               <button> Editar </button>
-              <button> Excluir </button>
+              <button onClick={() => deleteProcessedProduct(item.id)}>
+                {" "}
+                Excluir{" "}
+              </button>
             </div>
           );
         })}
