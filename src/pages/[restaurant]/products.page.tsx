@@ -64,7 +64,7 @@ const customStyles = {
   },
 };
 
-export default function Products({ inputslist }: InputsListProps) {
+export default function Products() {
   const {
     register,
     control,
@@ -83,30 +83,27 @@ export default function Products({ inputslist }: InputsListProps) {
   const router = useRouter();
   const restaurantURL = String(router.query.restaurant);
 
-  const newInputListFormatt = inputslist.map((input) => ({
-    value: input.id,
-    label: input.name,
-  }));
+  const { data: inputslist = [] } = useQuery<ProductsProps[]>(
+    ["inputs_list"],
+    async () => {
+      const response = await api.get(
+        `/${router.query.restaurant}/inputs/get-inputs`
+      );
+      return response.data;
+    }
+  );
 
-  const groupedOptions: groupedOptionProps[] = [
-    {
-      label: "Insumos",
-      options: newInputListFormatt,
-    },
-  ];
+  const { data: final_products } = useQuery<ProductsProps[]>(
+    ["final_products"],
+    async () => {
+      const response = await api.get(
+        `/${router.query.restaurant}/products/get-final-products`
+      );
+      return response.data;
+    }
+  );
 
-  const {
-    status,
-    data: final_products,
-    refetch,
-  } = useQuery<ProductsProps[]>(["final_products"], async () => {
-    const response = await api.get(
-      `/${router.query.restaurant}/products/get-final-products`
-    );
-    return response.data;
-  });
-
-  const { data: processed_products } = useQuery<ProductsProps[]>(
+  const { status, data: processed_products } = useQuery<ProductsProps[]>(
     ["processed_products"],
     async () => {
       const response = await api.get(
@@ -115,6 +112,17 @@ export default function Products({ inputslist }: InputsListProps) {
       return response.data;
     }
   );
+
+  console.log("inputslist", inputslist, final_products, processed_products);
+  const groupedOptions: groupedOptionProps[] = [
+    {
+      label: "Insumos",
+      options: inputslist.map((input) => ({
+        value: input.id,
+        label: input.name,
+      })),
+    },
+  ];
 
   const [modalIsOpen, setIsOpen] = useState(false);
 
@@ -127,6 +135,7 @@ export default function Products({ inputslist }: InputsListProps) {
   }
 
   const queryClient = useQueryClient();
+  const isLoading = queryClient.isFetching();
 
   const onSubmit = async (data: createProductData) => {
     if (data.type === "final") {
@@ -184,6 +193,9 @@ export default function Products({ inputslist }: InputsListProps) {
     }
   }
 
+  if (status === "loading") {
+    return <h1>carregando</h1>;
+  }
   return (
     <>
       <h1> Lista de produtos finais</h1>
@@ -239,6 +251,7 @@ export default function Products({ inputslist }: InputsListProps) {
               placeholder="Nome do produto"
               {...register("product_name")}
             />
+
             {fields.map((input, index) => {
               return (
                 <div key={input.id}>
@@ -251,7 +264,9 @@ export default function Products({ inputslist }: InputsListProps) {
                         value={groupedOptions.find(
                           (c) =>
                             value ===
-                            c.options.find((item) => item.value === value.value)
+                            c.options.find(
+                              (item) => item.value === value?.value
+                            )
                         )}
                         onChange={onChange}
                       />
@@ -290,27 +305,3 @@ export default function Products({ inputslist }: InputsListProps) {
     </>
   );
 }
-
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const restaurantURL = String(context.query.restaurant);
-
-  console.log(restaurantURL);
-
-  try {
-    const response = await api.get(`/${restaurantURL}/inputs/get-inputs`);
-    const inputslist = response.data;
-    console.log(inputslist);
-    return {
-      props: {
-        inputslist,
-      },
-    };
-  } catch (error) {
-    console.log(error);
-    return {
-      props: {
-        error: JSON.stringify(error),
-      },
-    };
-  }
-};
