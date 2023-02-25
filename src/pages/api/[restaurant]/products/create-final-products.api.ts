@@ -11,6 +11,7 @@ const createProductSchema = z.object({
       value: z.string(),
       label: z.string(),
       quantity: z.number(),
+      input_type: z.string(),
     })
     .array(),
 });
@@ -31,6 +32,7 @@ export default async function CreateFinalProduct(
   const restaurantId = String(req.query.restaurant);
 
   const { input, product_name } = createProductSchema.parse(req.body);
+
 
   const inputs_price = await prisma.inputs.findMany({
     select: {
@@ -84,7 +86,7 @@ export default async function CreateFinalProduct(
 
   Promise.all(create_products_inputs)
   
-  console.log(create_products_inputs)
+  console.log(req.body)
 
   return res.json(inputs_price);
 }

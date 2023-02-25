@@ -1,7 +1,6 @@
 import { api } from "@/src/lib/axios";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery, QueryClient, useMutation } from "@tanstack/react-query";
-import { GetServerSideProps } from "next";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
@@ -13,22 +12,13 @@ import { useQueryClient } from "@tanstack/react-query";
 interface optionsProps {
   value: string;
   label: string;
-}
+  input_type: "processed" | "input"
+  }
+
+
 interface groupedOptionProps {
   label: string;
   options: optionsProps[];
-}
-
-interface InputsProps {
-  id: string;
-  cod: string;
-  und: "lt" | "kg" | "und";
-  cost_in_cents: number;
-  name: string;
-}
-
-interface InputsListProps extends InputsProps {
-  inputslist: InputsProps[];
 }
 
 interface ProductsProps {
@@ -45,6 +35,7 @@ const createProductSchema = z.object({
       value: z.string(),
       label: z.string(),
       quantity: z.number(),
+      input_type: z.string(),
     })
     .array(),
 });
@@ -80,6 +71,7 @@ export default function Products() {
     control,
   });
 
+
   const router = useRouter();
   const restaurantURL = String(router.query.restaurant);
 
@@ -90,7 +82,7 @@ export default function Products() {
         `/${router.query.restaurant}/inputs/get-inputs`
       );
       return response.data;
-    }
+    },
   );
 
   const { data: final_products } = useQuery<ProductsProps[]>(
@@ -103,7 +95,7 @@ export default function Products() {
     }
   );
 
-  const { status, data: processed_products } = useQuery<ProductsProps[]>(
+  const { status, data: processed_products = [] } = useQuery<ProductsProps[]>(
     ["processed_products"],
     async () => {
       const response = await api.get(
@@ -113,13 +105,21 @@ export default function Products() {
     }
   );
 
-  console.log("inputslist", inputslist, final_products, processed_products);
   const groupedOptions: groupedOptionProps[] = [
     {
       label: "Insumos",
       options: inputslist.map((input) => ({
         value: input.id,
+        label: input.name,   
+        input_type: "input"
+      })),
+    },
+    {
+      label: "Produtos processados",
+      options: processed_products.map((input) => ({
+        value: input.id,
         label: input.name,
+        input_type: "processed"
       })),
     },
   ];
@@ -135,7 +135,6 @@ export default function Products() {
   }
 
   const queryClient = useQueryClient();
-  const isLoading = queryClient.isFetching();
 
   const onSubmit = async (data: createProductData) => {
     if (data.type === "final") {
@@ -162,6 +161,7 @@ export default function Products() {
         console.log(error);
       }
     }
+    console.log(data)
   };
 
   async function deleteFinalProduct(id: string) {
@@ -192,10 +192,13 @@ export default function Products() {
       console.log("cancelado");
     }
   }
+  
+  
 
   if (status === "loading") {
     return <h1>carregando</h1>;
   }
+  console.log("inputslist2", inputslist);
   return (
     <>
       <h1> Lista de produtos finais</h1>
@@ -269,6 +272,7 @@ export default function Products() {
                             )
                         )}
                         onChange={onChange}
+                        
                       />
                     )}
                   />
@@ -293,6 +297,7 @@ export default function Products() {
                   quantity: 0,
                   value: "",
                   label: "",
+                  input_type: "",
                 })
               }
             >
