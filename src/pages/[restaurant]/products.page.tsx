@@ -2,31 +2,40 @@ import { api } from "@/src/lib/axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import Modal from "react-modal";
 import Select from "react-select";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 
-interface optionsProps {
+interface OptionsProps {
   value: string;
   label: string;
-  input_type: "processed" | "input"
-  }
-
-
-interface groupedOptionProps {
-  label: string;
-  options: optionsProps[];
+  input_type: "processed" | "input";
 }
 
+interface ProductsInputsProps { 
+  quantity: number; 
+  input?: { 
+    id: string;
+    name: string;
+  },
+  processedProducts?: { 
+    id: string; 
+    name: string;
+  }
+}
+
+interface GroupedOptionProps {
+  label: string;
+  options: OptionsProps[];
+}
 interface ProductsProps {
   id: string;
   name: string;
   sell_price_in_cents: number;
 }
-
 const createProductSchema = z.object({
   type: z.string(),
   product_name: z.string(),
@@ -56,6 +65,11 @@ const customStyles = {
 };
 
 export default function Products() {
+  
+  const [modalIsOpen, setIsOpen] = useState(false);
+  const [modalEditProductsIsOpen, setModalEditProductsIsOpen] = useState(false);
+  const [activeFinalProduct, setActiveFinalProduct] = useState<ProductsInputsProps[]>()
+
   const {
     register,
     control,
@@ -71,7 +85,6 @@ export default function Products() {
     control,
   });
 
-
   const router = useRouter();
   const restaurantURL = String(router.query.restaurant);
 
@@ -82,7 +95,7 @@ export default function Products() {
         `/${router.query.restaurant}/inputs/get-inputs`
       );
       return response.data;
-    },
+    }
   );
 
   const { data: final_products } = useQuery<ProductsProps[]>(
@@ -95,23 +108,24 @@ export default function Products() {
     }
   );
 
-  const { status, data: processed_products = [] } = useQuery<ProductsProps[]>(
-    ["processed_products"],
-    async () => {
-      const response = await api.get(
-        `/${router.query.restaurant}/processedproducts/get-processed-products`
-      );
-      return response.data;
-    }
-  );
+  const {
+    refetch,
+    status,
+    data: processed_products = [],
+  } = useQuery<ProductsProps[]>(["processed_products"], async () => {
+    const response = await api.get(
+      `/${router.query.restaurant}/processedproducts/get-processed-products`
+    );
+    return response.data;
+  });
 
-  const groupedOptions: groupedOptionProps[] = [
+  const groupedOptions: GroupedOptionProps[] = [
     {
       label: "Insumos",
       options: inputslist.map((input) => ({
         value: input.id,
-        label: input.name,   
-        input_type: "input"
+        label: input.name,
+        input_type: "input",
       })),
     },
     {
@@ -119,12 +133,10 @@ export default function Products() {
       options: processed_products.map((input) => ({
         value: input.id,
         label: input.name,
-        input_type: "processed"
+        input_type: "processed",
       })),
     },
   ];
-
-  const [modalIsOpen, setIsOpen] = useState(false);
 
   function openModal() {
     setIsOpen(true);
@@ -132,6 +144,16 @@ export default function Products() {
 
   function closeModal() {
     setIsOpen(false);
+  }
+
+  async function openModalEditFinalProduct(id: string) {
+    const response = await api.get(`/${router.query.restaurant}/products/get-final-products-inputs/${id}`)
+    setActiveFinalProduct(response.data)
+    setModalEditProductsIsOpen(true);
+  }
+
+  function closeModalEditProducts() {
+    setModalEditProductsIsOpen(false);
   }
 
   const queryClient = useQueryClient();
@@ -161,7 +183,6 @@ export default function Products() {
         console.log(error);
       }
     }
-    console.log(data)
   };
 
   async function deleteFinalProduct(id: string) {
@@ -192,30 +213,29 @@ export default function Products() {
       console.log("cancelado");
     }
   }
-  
-  
 
   if (status === "loading") {
     return <h1>carregando</h1>;
   }
-  console.log("inputslist2", inputslist);
+
   return (
     <>
       <h1> Lista de produtos finais</h1>
-      {final_products &&
-        final_products.map((product) => {
-          return (
-            <div key={product.id}>
-              <span> {product.name} </span>
-              <span> {product.sell_price_in_cents} </span>
-              <button> Editar </button>
-              <button onClick={() => deleteFinalProduct(product.id)}>
-                {" "}
-                Excluir{" "}
-              </button>
-            </div>
-          );
-        })}
+
+      {final_products?.map((product) => {
+        return (
+          <div key={product.id}>
+            <span> {product.name} </span>
+            <span> {product.sell_price_in_cents} </span>
+            <button onClick={() => openModalEditFinalProduct(product.id)}> Editar </button>
+            <button onClick={() => deleteFinalProduct(product.id)}>
+              {" "}
+              Excluir{" "}
+            </button>
+          </div>
+        );
+      })}
+
       <h1>Lista de produtos processados</h1>
 
       {processed_products &&
@@ -272,7 +292,6 @@ export default function Products() {
                             )
                         )}
                         onChange={onChange}
-                        
                       />
                     )}
                   />
@@ -305,6 +324,18 @@ export default function Products() {
             </button>
             <button type="submit">Cadastrar produto</button>
           </form>
+        </Modal>
+
+        <Modal
+          isOpen={modalEditProductsIsOpen}
+          onRequestClose={closeModalEditProducts}
+          style={customStyles}
+          contentLabel="Example Modal"
+          ariaHideApp={false}
+        >
+            {activeFinalProduct && activeFinalProduct.map((input) => {
+              return <h1> {input.input?.name}</h1>
+            })}
         </Modal>
       </div>
     </>

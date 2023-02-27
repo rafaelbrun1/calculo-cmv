@@ -33,7 +33,6 @@ export default async function CreateFinalProduct(
 
   const { input, product_name } = createProductSchema.parse(req.body);
 
-
   const inputs_price = await prisma.inputs.findMany({
     select: {
       id: true,
@@ -73,20 +72,29 @@ export default async function CreateFinalProduct(
     },
   });
 
-  const create_products_inputs = input.map((item) => { 
-     return prisma.productsInputs.create({ 
-      data: { 
+  const create_products_inputs = input.map((item) => {
+    if (item.input_type === "input") {
+      return prisma.productsInputs.create({
+        data: {
+          quantity: item.quantity,
+          inputsId: item.value,
+          final_productsId: final_product.id,
+          restaurantId,
+        },
+      });
+    }
+    return prisma.productsInputs.create({
+      data: {
         quantity: item.quantity,
-        inputsId: item.value,
+        procesedProductsId: item.value,
         final_productsId: final_product.id,
         restaurantId,
-      }
-    })
-  })
+      },
+    });
+  });
 
-  Promise.all(create_products_inputs)
-  
-  console.log(req.body)
+  Promise.all(create_products_inputs);
+
 
   return res.json(inputs_price);
 }

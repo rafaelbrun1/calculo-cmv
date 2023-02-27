@@ -23,7 +23,7 @@ export default async function GetProcessedProducts(
       },
   })
 
-  console.log(processed_products)
+
 
   return res.json( processed_products )
 }

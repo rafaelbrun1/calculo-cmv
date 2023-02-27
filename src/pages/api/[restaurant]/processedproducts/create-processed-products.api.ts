@@ -11,6 +11,7 @@ const createProductSchema = z.object({
       value: z.string(),
       label: z.string(),
       quantity: z.number(),
+      input_type: z.string(),
     })
     .array(),
 });
@@ -72,6 +73,7 @@ export default async function CreateFinalProduct(
   });
 
   const create_products_inputs = input.map((item) => { 
+    if (item.input_type === 'input') { 
     return prisma.processedProductsInputs.create({ 
      data: { 
        quantity: item.quantity,
@@ -80,11 +82,20 @@ export default async function CreateFinalProduct(
        restaurantId,
      }
    })
+  }
+  return prisma.processedProductsInputs.create({ 
+    data: { 
+      quantity: item.quantity,
+      processedProductsIdAsInput: item.value,
+      procesedProductsId: processed_product.id,
+      restaurantId,
+    }
+  })
  })
 
  Promise.all(create_products_inputs)
 
-  console.log(processed_product);
+  
 
   return res.json(inputs_price);
 }
