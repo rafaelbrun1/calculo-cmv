@@ -1,7 +1,7 @@
 import { prisma } from "@/src/lib/prisma";
 import { NextApiRequest, NextApiResponse } from "next";
 
-export default async function GetFinalProductsInputs(
+export default async function GetProcessedProductsInputs(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
@@ -11,19 +11,19 @@ export default async function GetFinalProductsInputs(
 
   const id = String(req.query.id);
 
-  const final_products_inputs = await prisma.productsInputs.findMany({
+  const processed_products_inputs = await prisma.processedProductsInputs.findMany({
     where: {
-      final_productsId: id,
+      procesedProductsId: id,
     },
     select: {
       quantity: true,
-      input: {
+      inputs: {
         select: {
           id: true,
           name: true,
         },
       },
-      processedProducts: {
+      processedProductsAsInput: {
         select: {
           id: true,
           name: true,
@@ -32,7 +32,7 @@ export default async function GetFinalProductsInputs(
     },
   });
 
-  console.log(req.query);
+  console.log(processed_products_inputs)
 
-  return res.json(final_products_inputs);
+  return res.json(processed_products_inputs);
 }

@@ -15,16 +15,28 @@ interface OptionsProps {
   input_type: "processed" | "input";
 }
 
-interface ProductsInputsProps { 
-  quantity: number; 
-  input?: { 
+interface ProductsInputsProps {
+  quantity: number;
+  input?: {
     id: string;
     name: string;
-  },
-  processedProducts?: { 
-    id: string; 
+  };
+  processedProducts?: {
+    id: string;
     name: string;
-  }
+  };
+}
+
+interface ProcessedProductsInputsProps {
+  quantity: number;
+  inputs?: {
+    id: string;
+    name: string;
+  };
+  processedProductsAsInput?: {
+    id: string;
+    name: string;
+  };
 }
 
 interface GroupedOptionProps {
@@ -65,10 +77,14 @@ const customStyles = {
 };
 
 export default function Products() {
-  
   const [modalIsOpen, setIsOpen] = useState(false);
   const [modalEditProductsIsOpen, setModalEditProductsIsOpen] = useState(false);
-  const [activeFinalProduct, setActiveFinalProduct] = useState<ProductsInputsProps[]>()
+  const [activeFinalProduct, setActiveFinalProduct] =
+    useState<ProductsInputsProps[]>();
+  const [modalEditProcessedProduct, setModalEditProcessedProduct] =
+    useState(false);
+  const [activeProcessedProduct, setActiveProcessedProduct] =
+    useState<ProcessedProductsInputsProps[]>();
 
   const {
     register,
@@ -147,13 +163,28 @@ export default function Products() {
   }
 
   async function openModalEditFinalProduct(id: string) {
-    const response = await api.get(`/${router.query.restaurant}/products/get-final-products-inputs/${id}`)
-    setActiveFinalProduct(response.data)
+    const response = await api.get(
+      `/${router.query.restaurant}/products/get-final-products-inputs/${id}`
+    );
+    setActiveFinalProduct(response.data);
     setModalEditProductsIsOpen(true);
   }
 
   function closeModalEditProducts() {
     setModalEditProductsIsOpen(false);
+  }
+
+  async function openModalEditProcessedProduct(id: string) {
+    const response = await api.get(
+      `/${router.query.restaurant}/processedproducts/get-processed-products-inputs/${id}`
+    );
+    setActiveProcessedProduct(response.data);
+    setModalEditProcessedProduct(true);
+    console.log(activeProcessedProduct);
+  }
+
+  function closeModalEditProcessedProduct() {
+    setModalEditProcessedProduct(false);
   }
 
   const queryClient = useQueryClient();
@@ -227,7 +258,10 @@ export default function Products() {
           <div key={product.id}>
             <span> {product.name} </span>
             <span> {product.sell_price_in_cents} </span>
-            <button onClick={() => openModalEditFinalProduct(product.id)}> Editar </button>
+            <button onClick={() => openModalEditFinalProduct(product.id)}>
+              {" "}
+              Editar{" "}
+            </button>
             <button onClick={() => deleteFinalProduct(product.id)}>
               {" "}
               Excluir{" "}
@@ -244,7 +278,10 @@ export default function Products() {
             <div key={item.id}>
               <span> {item.name} </span>
               <span> {item.sell_price_in_cents} </span>
-              <button> Editar </button>
+              <button onClick={() => openModalEditProcessedProduct(item.id)}>
+                {" "}
+                Editar{" "}
+              </button>
               <button onClick={() => deleteProcessedProduct(item.id)}>
                 {" "}
                 Excluir{" "}
@@ -333,9 +370,55 @@ export default function Products() {
           contentLabel="Example Modal"
           ariaHideApp={false}
         >
-            {activeFinalProduct && activeFinalProduct.map((input) => {
-              return <h1> {input.input?.name}</h1>
-            })}
+          {activeFinalProduct &&
+          activeFinalProduct.some((item) => item.input !== null) ? (
+            <>
+              <h1>Insumos</h1>
+              {activeFinalProduct.map((input) => {
+                return <p>{input.input?.name}</p>;
+              })}
+            </>
+          ) : null}
+
+          {activeFinalProduct &&
+          activeFinalProduct.some((item) => item.processedProducts !== null) ? (
+            <>
+              <h1>Produtos processados</h1>
+              {activeFinalProduct.map((input) => {
+                return <p>{input.processedProducts?.name}</p>;
+              })}
+            </>
+          ) : null}
+        </Modal>
+
+        <Modal
+          isOpen={modalEditProcessedProduct}
+          onRequestClose={closeModalEditProcessedProduct}
+          style={customStyles}
+          contentLabel="Example Modal"
+          ariaHideApp={false}
+        >
+          {activeProcessedProduct &&
+          activeProcessedProduct.some((item) => item.inputs !== null) ? (
+            <>
+              <h1>Insumos</h1>
+              {activeProcessedProduct.map((input) => {
+                return <p>{input.inputs?.name}</p>;
+              })}
+            </>
+          ) : null}
+
+          {activeProcessedProduct &&
+          activeProcessedProduct.some(
+            (item) => item.processedProductsAsInput !== null
+          ) ? (
+            <>
+              <h1>Produtos Processados</h1>
+              {activeProcessedProduct.map((input) => {
+                return <p>{input.processedProductsAsInput?.name}</p>;
+              })}
+            </>
+          ) : null}
         </Modal>
       </div>
     </>
