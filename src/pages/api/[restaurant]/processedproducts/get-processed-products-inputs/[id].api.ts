@@ -11,28 +11,29 @@ export default async function GetProcessedProductsInputs(
 
   const id = String(req.query.id);
 
-  const processed_products_inputs = await prisma.processedProductsInputs.findMany({
-    where: {
-      procesedProductsId: id,
-    },
-    select: {
-      quantity: true,
-      inputs: {
-        select: {
-          id: true,
-          name: true,
+  const processed_products_inputs =
+    await prisma.processedProductsInputs.findMany({
+      where: {
+        procesedProductsId: id,
+      },
+      select: {
+        quantity: true,
+        inputs: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        processedProductsAsInput: {
+          select: {
+            id: true,
+            name: true,
+          },
         },
       },
-      processedProductsAsInput: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-    },
-  });
+    });
 
-  console.log(processed_products_inputs)
+  console.log(processed_products_inputs);
 
   return res.json(processed_products_inputs);
 }

@@ -21,6 +21,8 @@ export default async function GetFinalProductsInputs(
         select: {
           id: true,
           name: true,
+          und: true,
+          cost_in_cents: true,
         },
       },
       processedProducts: {
@@ -29,10 +31,15 @@ export default async function GetFinalProductsInputs(
           name: true,
         },
       },
+      product: { 
+        select: { 
+          sell_price_in_cents: true,
+        },
+      }
     },
   });
 
-  console.log(req.query);
+  console.log(final_products_inputs);
 
   return res.json(final_products_inputs);
 }

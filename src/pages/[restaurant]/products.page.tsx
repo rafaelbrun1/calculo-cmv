@@ -20,10 +20,15 @@ interface ProductsInputsProps {
   input?: {
     id: string;
     name: string;
+    und: "lt" | "kg" | "und";
+    cost_in_cents: number;
   };
   processedProducts?: {
     id: string;
     name: string;
+  };
+  product: {
+    sell_price_in_cents: number;
   };
 }
 
@@ -370,25 +375,41 @@ export default function Products() {
           contentLabel="Example Modal"
           ariaHideApp={false}
         >
-          {activeFinalProduct &&
-          activeFinalProduct.some((item) => item.input !== null) ? (
-            <>
-              <h1>Insumos</h1>
-              {activeFinalProduct.map((input) => {
-                return <p>{input.input?.name}</p>;
-              })}
-            </>
-          ) : null}
+          <>
+            {activeFinalProduct &&
+            activeFinalProduct.some((item) => item.input !== null) ? (
+              <>
+                <h1>Insumos</h1>
+                {activeFinalProduct.map((input, index) => {
+                  return (
+                    <div key={index}>
+                      <div>
+                        <span>Nome: {input.input?.name} </span>
+                        <span> Quantidade: {input.quantity} </span>
+                        <span>Unidade: {input.input?.und} </span>
+                        <span>Custo UND: {input.input?.cost_in_cents} </span>
+                        <button>Editar</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            ) : null}
 
-          {activeFinalProduct &&
-          activeFinalProduct.some((item) => item.processedProducts !== null) ? (
-            <>
-              <h1>Produtos processados</h1>
-              {activeFinalProduct.map((input) => {
-                return <p>{input.processedProducts?.name}</p>;
-              })}
-            </>
-          ) : null}
+            {activeFinalProduct &&
+            activeFinalProduct.some(
+              (item) => item.processedProducts !== null
+            ) ? (
+              <>
+                <h1>Produtos processados</h1>
+                {activeFinalProduct.map((input) => {
+                  return <p>{input.processedProducts?.name}</p>;
+                })}
+              </>
+            ) : null}
+          </>
+
+          <div> <h1> Preço final: R${activeFinalProduct && activeFinalProduct[0].product.sell_price_in_cents} </h1></div> 
         </Modal>
 
         <Modal
