@@ -68,6 +68,15 @@ const createProductSchema = z.object({
 
 type createProductData = z.infer<typeof createProductSchema>;
 
+const updateInputSchema = z.object({
+  cod: z.string().nullable(),
+  und: z.string(),
+  cost_in_cents: z.number(),
+  name: z.string(),
+});
+
+type updateInputData = z.infer<typeof updateInputSchema>;
+
 const customStyles = {
   content: {
     top: "50%",
@@ -90,15 +99,25 @@ export default function Products() {
     useState(false);
   const [activeProcessedProduct, setActiveProcessedProduct] =
     useState<ProcessedProductsInputsProps[]>();
+  const [editingInput, setEditingInput] = useState<string | null | undefined>(
+    null
+  );
 
   const {
-    register,
+    register: formCreateProduct,
     control,
-    handleSubmit,
+    handleSubmit: handleSubmitCreateProduct,
     reset,
     formState: { errors },
   } = useForm<createProductData>({
     resolver: zodResolver(createProductSchema),
+  });
+
+  const {
+    register: formEditInput,
+    handleSubmit: handleEditInput
+  } = useForm<updateInputData>({
+    resolver: zodResolver(updateInputSchema),
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -177,6 +196,7 @@ export default function Products() {
 
   function closeModalEditProducts() {
     setModalEditProductsIsOpen(false);
+    setEditingInput(null);
   }
 
   async function openModalEditProcessedProduct(id: string) {
@@ -194,7 +214,7 @@ export default function Products() {
 
   const queryClient = useQueryClient();
 
-  const onSubmit = async (data: createProductData) => {
+  const onSubmitFormCreateProduct = async (data: createProductData) => {
     if (data.type === "final") {
       try {
         await api.post(`/${restaurantURL}/products/create-final-products`, {
@@ -305,8 +325,8 @@ export default function Products() {
           ariaHideApp={false}
         >
           <button onClick={closeModal}>close</button>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <select {...register("type" as const)}>
+          <form onSubmit={handleSubmitCreateProduct(onSubmitFormCreateProduct)}>
+            <select {...formCreateProduct("type" as const)}>
               <option value="final">Prato final</option>
               <option value="processado">Produto Processado</option>
             </select>
@@ -314,7 +334,7 @@ export default function Products() {
             <input
               type="text"
               placeholder="Nome do produto"
-              {...register("product_name")}
+              {...formCreateProduct("product_name")}
             />
 
             {fields.map((input, index) => {
@@ -340,7 +360,7 @@ export default function Products() {
 
                   <input
                     type="number"
-                    {...register(`input.${index}.quantity` as const, {
+                    {...formCreateProduct(`input.${index}.quantity` as const, {
                       valueAsNumber: true,
                     })}
                     placeholder="Quantidade"
@@ -380,18 +400,66 @@ export default function Products() {
             activeFinalProduct.some((item) => item.input !== null) ? (
               <>
                 <h1>Insumos</h1>
-                {activeFinalProduct.map((input, index) => {
-                  return (
-                    <div key={index}>
-                      <div>
-                        <span>Nome: {input.input?.name} </span>
-                        <span> Quantidade: {input.quantity} </span>
-                        <span>Unidade: {input.input?.und} </span>
-                        <span>Custo UND: {input.input?.cost_in_cents} </span>
-                        <button>Editar</button>
+                {activeFinalProduct.map((input) => {
+                  {
+                    return editingInput === input.input?.id ? (
+                      <form>
+                        <label htmlFor="name">
+                          Nome
+                          <input
+                            type="text"
+                            id="name"
+                            value={input.input?.name}
+                            {...formEditInput('name')}
+                          />
+                        </label>
+                        <label htmlFor="quantity">
+                          Quantidade
+                          <input
+                            type="number"
+                            id="quantity"
+                            value={input.quantity}
+                            
+                          />
+                        </label>
+                        <label htmlFor="und">
+                          Unidade
+                          <input
+                            type="text"
+                            id="und"
+                            value={input.input?.und}
+                            {...formEditInput('und')}
+                          />
+                        </label>
+                        <label htmlFor="cost">
+                          Custo por UND
+                          <input
+                            type="number"
+                            id="cost"
+                            value={input.input?.cost_in_cents}
+                            {...formEditInput('cost_in_cents')}
+                          />
+                        </label>
+                        <button onClick={() => setEditingInput(null)}>Cancelar</button>
+                        <button type="submit"> Salvar </button>
+                      </form>
+                    ) : (
+                      <div key={input.input?.id}>
+                        <div>
+                          <span>Nome: {input.input?.name} </span>
+                          <span> Quantidade: {input.quantity} </span>
+                          <span>Unidade: {input.input?.und} </span>
+                          <span>Custo UND: {input.input?.cost_in_cents} </span>
+                          <button
+                            onClick={() => setEditingInput(input.input?.id)}
+                          >
+                            Editar
+                          </button>
+                          <button>Excluir</button>
+                        </div>
                       </div>
-                    </div>
-                  );
+                    );
+                  }
                 })}
               </>
             ) : null}
@@ -409,7 +477,15 @@ export default function Products() {
             ) : null}
           </>
 
-          <div> <h1> Preço final: R${activeFinalProduct && activeFinalProduct[0].product.sell_price_in_cents} </h1></div> 
+          <div>
+            {" "}
+            <h1>
+              {" "}
+              Preço final: R$
+              {activeFinalProduct &&
+                activeFinalProduct[0].product.sell_price_in_cents}{" "}
+            </h1>
+          </div>
         </Modal>
 
         <Modal
