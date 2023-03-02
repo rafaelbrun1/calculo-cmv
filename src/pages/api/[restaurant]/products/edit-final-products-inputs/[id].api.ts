@@ -2,14 +2,15 @@ import { prisma } from "@/src/lib/prisma";
 import { NextApiRequest, NextApiResponse } from "next";
 import { unstable_getServerSession } from "next-auth";
 import { z } from "zod";
-import { authOptions } from "../../auth/[...nextauth].api";
+import { authOptions } from "../../../auth/[...nextauth].api";
+
 
 const updateInputSchema = z.object({
   id: z.string(),
-  cod: z.string().nullable(),
   cost_in_cents: z.number(),
   name: z.string(),
   und: z.string(),
+  quantity: z.number(),
 });
 
 export default async function UpdateInput(
@@ -27,23 +28,12 @@ export default async function UpdateInput(
   }
 
   const restaurantId = String(req.query.restaurant);
+  const productId = String(req.query.id)
 
-  const { id, cod, cost_in_cents, name, und } = updateInputSchema.parse(
+  const {quantity, id, cost_in_cents, name, und } = updateInputSchema.parse(
     req.body
   );
 
-  const inputs = await prisma.inputs.update({
-    data: {
-      cod,
-      cost_in_cents,
-      name,
-      und,
-      restaurantId,
-    },
-    where: {
-      id,
-    },
-  });
 
-  return res.json(inputs);
+    return res.json('');
 }

@@ -16,6 +16,7 @@ interface OptionsProps {
 }
 
 interface ProductsInputsProps {
+  id: string;
   quantity: number;
   input?: {
     id: string;
@@ -73,6 +74,7 @@ const updateInputSchema = z.object({
   und: z.string(),
   cost_in_cents: z.number(),
   name: z.string(),
+  quantity: z.number(),
 });
 
 type updateInputData = z.infer<typeof updateInputSchema>;
@@ -114,11 +116,14 @@ export default function Products() {
   });
 
   const {
+    watch,
     register: formEditInput,
     handleSubmit: handleEditInput
   } = useForm<updateInputData>({
     resolver: zodResolver(updateInputSchema),
   });
+  const watchedValues = watch(["name", "quantity", "und", "cost_in_cents"]);
+
 
   const { fields, append, remove } = useFieldArray({
     name: "input",
@@ -274,6 +279,7 @@ export default function Products() {
     return <h1>carregando</h1>;
   }
 
+
   return (
     <>
       <h1> Lista de produtos finais</h1>
@@ -400,17 +406,17 @@ export default function Products() {
             activeFinalProduct.some((item) => item.input !== null) ? (
               <>
                 <h1>Insumos</h1>
-                {activeFinalProduct.map((input) => {
+                {activeFinalProduct.map((input, index) => {
                   {
-                    return editingInput === input.input?.id ? (
-                      <form>
+                    return editingInput === input.id ? (
+                      <form key={input.id}>
                         <label htmlFor="name">
                           Nome
                           <input
                             type="text"
                             id="name"
-                            value={input.input?.name}
-                            {...formEditInput('name')}
+                            defaultValue={input.input?.name}
+                            {...formEditInput(`name.${input.id}` as keyof updateInputData)}
                           />
                         </label>
                         <label htmlFor="quantity">
@@ -418,8 +424,8 @@ export default function Products() {
                           <input
                             type="number"
                             id="quantity"
-                            value={input.quantity}
-                            
+                            defaultValue={input.quantity}
+                           {...formEditInput(`quantity.${input.id}` as keyof updateInputData)}
                           />
                         </label>
                         <label htmlFor="und">
@@ -427,8 +433,8 @@ export default function Products() {
                           <input
                             type="text"
                             id="und"
-                            value={input.input?.und}
-                            {...formEditInput('und')}
+                            defaultValue={input.input?.und}
+                            {...formEditInput(`und.${input.id}` as keyof updateInputData)}
                           />
                         </label>
                         <label htmlFor="cost">
@@ -436,22 +442,22 @@ export default function Products() {
                           <input
                             type="number"
                             id="cost"
-                            value={input.input?.cost_in_cents}
-                            {...formEditInput('cost_in_cents')}
+                            defaultValue={input.input?.cost_in_cents}
+                            {...formEditInput(`cost_in_cents.${input.id}` as keyof updateInputData)}
                           />
                         </label>
                         <button onClick={() => setEditingInput(null)}>Cancelar</button>
                         <button type="submit"> Salvar </button>
                       </form>
                     ) : (
-                      <div key={input.input?.id}>
+                      <div key={input.id}>
                         <div>
                           <span>Nome: {input.input?.name} </span>
                           <span> Quantidade: {input.quantity} </span>
                           <span>Unidade: {input.input?.und} </span>
                           <span>Custo UND: {input.input?.cost_in_cents} </span>
                           <button
-                            onClick={() => setEditingInput(input.input?.id)}
+                            onClick={() => setEditingInput(input.id)}
                           >
                             Editar
                           </button>

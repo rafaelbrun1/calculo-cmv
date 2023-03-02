@@ -16,6 +16,7 @@ export default async function GetFinalProductsInputs(
       final_productsId: id,
     },
     select: {
+      id: true,
       quantity: true,
       input: {
         select: {
