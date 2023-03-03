@@ -70,6 +70,7 @@ const createProductSchema = z.object({
 type createProductData = z.infer<typeof createProductSchema>;
 
 const updateInputSchema = z.object({
+  id: z.string(),
   cod: z.string().nullable(),
   und: z.string(),
   cost_in_cents: z.number(),
@@ -77,7 +78,7 @@ const updateInputSchema = z.object({
   quantity: z.number(),
 });
 
-type updateInputData = z.infer<typeof updateInputSchema>;
+type updateProductInputData = z.infer<typeof updateInputSchema>;
 
 const customStyles = {
   content: {
@@ -119,10 +120,9 @@ export default function Products() {
     watch,
     register: formEditInput,
     handleSubmit: handleEditInput
-  } = useForm<updateInputData>({
+  } = useForm<updateProductInputData>({
     resolver: zodResolver(updateInputSchema),
   });
-  const watchedValues = watch(["name", "quantity", "und", "cost_in_cents"]);
 
 
   const { fields, append, remove } = useFieldArray({
@@ -246,6 +246,22 @@ export default function Products() {
     }
   };
 
+  async function onSubmitFormEditProductInput(data: updateProductInputData) { 
+    /*try {
+      await api.put(`${restaurantURL}/products/edit-product-input`, { 
+        id: data.id,
+        cost_in_cents: data.cost_in_cents,
+        name: data.name,
+        und: data.und,
+        quantity: data.quantity,
+      })
+    } catch (error) {
+      console.log(error)
+    }*/
+
+    console.log(data)
+  }
+
   async function deleteFinalProduct(id: string) {
     if (confirm("Tem certeza que deseja excluir esse produto?")) {
       await api.delete(`${restaurantURL}/products/delete-final-product`, {
@@ -280,6 +296,7 @@ export default function Products() {
   }
 
 
+  
   return (
     <>
       <h1> Lista de produtos finais</h1>
@@ -409,14 +426,14 @@ export default function Products() {
                 {activeFinalProduct.map((input, index) => {
                   {
                     return editingInput === input.id ? (
-                      <form key={input.id}>
+                      <form onSubmit={handleEditInput(onSubmitFormEditProductInput)} key={input.id}>
                         <label htmlFor="name">
                           Nome
                           <input
                             type="text"
                             id="name"
                             defaultValue={input.input?.name}
-                            {...formEditInput(`name.${input.id}` as keyof updateInputData)}
+                            {...formEditInput(`name.${input.id}` as keyof updateProductInputData)}
                           />
                         </label>
                         <label htmlFor="quantity">
@@ -425,7 +442,7 @@ export default function Products() {
                             type="number"
                             id="quantity"
                             defaultValue={input.quantity}
-                           {...formEditInput(`quantity.${input.id}` as keyof updateInputData)}
+                           {...formEditInput(`quantity.${input.id}` as keyof updateProductInputData)}
                           />
                         </label>
                         <label htmlFor="und">
@@ -434,7 +451,7 @@ export default function Products() {
                             type="text"
                             id="und"
                             defaultValue={input.input?.und}
-                            {...formEditInput(`und.${input.id}` as keyof updateInputData)}
+                            {...formEditInput(`und.${input.id}` as keyof updateProductInputData)}
                           />
                         </label>
                         <label htmlFor="cost">
@@ -443,7 +460,7 @@ export default function Products() {
                             type="number"
                             id="cost"
                             defaultValue={input.input?.cost_in_cents}
-                            {...formEditInput(`cost_in_cents.${input.id}` as keyof updateInputData)}
+                            {...formEditInput(`cost_in_cents.${input.id}` as keyof updateProductInputData)}
                           />
                         </label>
                         <button onClick={() => setEditingInput(null)}>Cancelar</button>
