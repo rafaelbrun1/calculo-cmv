@@ -71,7 +71,6 @@ type createProductData = z.infer<typeof createProductSchema>;
 
 const updateInputSchema = z.object({
   id: z.string(),
-  cod: z.string().nullable(),
   und: z.string(),
   cost_in_cents: z.number(),
   name: z.string(),
@@ -111,19 +110,17 @@ export default function Products() {
     control,
     handleSubmit: handleSubmitCreateProduct,
     reset,
-    formState: { errors },
   } = useForm<createProductData>({
     resolver: zodResolver(createProductSchema),
   });
 
   const {
-    watch,
     register: formEditInput,
-    handleSubmit: handleEditInput
+    handleSubmit: handleEditInput,
+    formState: { errors },
   } = useForm<updateProductInputData>({
     resolver: zodResolver(updateInputSchema),
   });
-
 
   const { fields, append, remove } = useFieldArray({
     name: "input",
@@ -246,7 +243,7 @@ export default function Products() {
     }
   };
 
-  async function onSubmitFormEditProductInput(data: updateProductInputData) { 
+  async function onSubmitFormEditProductInput(data: updateProductInputData) {
     /*try {
       await api.put(`${restaurantURL}/products/edit-product-input`, { 
         id: data.id,
@@ -259,9 +256,10 @@ export default function Products() {
       console.log(error)
     }*/
 
-    console.log(data)
+    console.log(data);
   }
 
+  console.log(errors);
   async function deleteFinalProduct(id: string) {
     if (confirm("Tem certeza que deseja excluir esse produto?")) {
       await api.delete(`${restaurantURL}/products/delete-final-product`, {
@@ -295,8 +293,6 @@ export default function Products() {
     return <h1>carregando</h1>;
   }
 
-
-  
   return (
     <>
       <h1> Lista de produtos finais</h1>
@@ -426,14 +422,19 @@ export default function Products() {
                 {activeFinalProduct.map((input, index) => {
                   {
                     return editingInput === input.id ? (
-                      <form onSubmit={handleEditInput(onSubmitFormEditProductInput)} key={input.id}>
+                      <form
+                        onSubmit={handleEditInput(onSubmitFormEditProductInput)}
+                        key={input.id}
+                      >
                         <label htmlFor="name">
                           Nome
                           <input
                             type="text"
                             id="name"
                             defaultValue={input.input?.name}
-                            {...formEditInput(`name.${input.id}` as keyof updateProductInputData)}
+                            {...formEditInput(
+                              `name.${input.id}` as keyof updateProductInputData
+                            )}
                           />
                         </label>
                         <label htmlFor="quantity">
@@ -442,7 +443,12 @@ export default function Products() {
                             type="number"
                             id="quantity"
                             defaultValue={input.quantity}
-                           {...formEditInput(`quantity.${input.id}` as keyof updateProductInputData)}
+                            {...formEditInput(
+                              `quantity.${input.id}` as keyof updateProductInputData,
+                              {
+                                valueAsNumber: true,
+                              }
+                            )}
                           />
                         </label>
                         <label htmlFor="und">
@@ -451,19 +457,28 @@ export default function Products() {
                             type="text"
                             id="und"
                             defaultValue={input.input?.und}
-                            {...formEditInput(`und.${input.id}` as keyof updateProductInputData)}
+                            {...formEditInput(
+                              `und.${input.id}` as keyof updateProductInputData
+                            )}
                           />
                         </label>
-                        <label htmlFor="cost">
+                        <label htmlFor={`cost_in_cents_${input.id}`}>
                           Custo por UND
                           <input
                             type="number"
-                            id="cost"
-                            defaultValue={input.input?.cost_in_cents}
-                            {...formEditInput(`cost_in_cents.${input.id}` as keyof updateProductInputData)}
+                            id={`cost_in_cents_${input.id}`}
+                            defaultValue={Number(input.input?.cost_in_cents)}
+                            {...formEditInput(
+                              `cost_in_cents.${input.id}` as keyof updateProductInputData,
+                              {
+                                valueAsNumber: true,
+                              }
+                            )}
                           />
                         </label>
-                        <button onClick={() => setEditingInput(null)}>Cancelar</button>
+                        <button onClick={() => setEditingInput(null)}>
+                          Cancelar
+                        </button>
                         <button type="submit"> Salvar </button>
                       </form>
                     ) : (
@@ -473,9 +488,7 @@ export default function Products() {
                           <span> Quantidade: {input.quantity} </span>
                           <span>Unidade: {input.input?.und} </span>
                           <span>Custo UND: {input.input?.cost_in_cents} </span>
-                          <button
-                            onClick={() => setEditingInput(input.id)}
-                          >
+                          <button onClick={() => setEditingInput(input.id)}>
                             Editar
                           </button>
                           <button>Excluir</button>
