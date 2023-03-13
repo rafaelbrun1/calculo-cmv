@@ -70,14 +70,26 @@ const createProductSchema = z.object({
 type createProductData = z.infer<typeof createProductSchema>;
 
 const updateInputSchema = z.object({
-  id: z.string(),
-  und: z.string(),
-  cost_in_cents: z.number(),
-  name: z.string(),
-  quantity: z.number(),
+  und: z.record(z.string()),
+  cost_in_cents: z.record(z.number()),
+  name: z.record(z.string()),
+  quantity: z.record(z.number()),
 });
 
-type updateProductInputData = z.infer<typeof updateInputSchema>;
+interface updateProductInputData {
+  und: {
+    [key: string]: string;
+  };
+  cost_in_cents: {
+    [key: string]: number;
+  };
+  name: {
+    [key: string]: string;
+  };
+  quantity: {
+    [key: string]: number;
+  };
+}
 
 const customStyles = {
   content: {
@@ -95,8 +107,9 @@ const customStyles = {
 export default function Products() {
   const [modalIsOpen, setIsOpen] = useState(false);
   const [modalEditProductsIsOpen, setModalEditProductsIsOpen] = useState(false);
-  const [activeFinalProduct, setActiveFinalProduct] =
-    useState<ProductsInputsProps[]>();
+  const [activeFinalProduct, setActiveFinalProduct] = useState<
+    ProductsInputsProps[]
+  >([]);
   const [modalEditProcessedProduct, setModalEditProcessedProduct] =
     useState(false);
   const [activeProcessedProduct, setActiveProcessedProduct] =
@@ -207,7 +220,6 @@ export default function Products() {
     );
     setActiveProcessedProduct(response.data);
     setModalEditProcessedProduct(true);
-    console.log(activeProcessedProduct);
   }
 
   function closeModalEditProcessedProduct() {
@@ -244,22 +256,37 @@ export default function Products() {
   };
 
   async function onSubmitFormEditProductInput(data: updateProductInputData) {
-    /*try {
-      await api.put(`${restaurantURL}/products/edit-product-input`, { 
-        id: data.id,
-        cost_in_cents: data.cost_in_cents,
-        name: data.name,
-        und: data.und,
-        quantity: data.quantity,
-      })
-    } catch (error) {
-      console.log(error)
-    }*/
+    try {
+      await api
+        .put(`${restaurantURL}/products/edit-product-input`, {
+          id: editingInput,
+          cost_in_cents: Number(Object.values(data.cost_in_cents)),
+          name: String(Object.values(data.name)),
+          und: String(Object.values(data.und)),
+          quantity: Number(Object.values(data.quantity)),
+        })
+        .then((response) => {
+          const updatedInput = response.data;
 
-    console.log(data);
+          setActiveFinalProduct((prevState) =>
+            prevState.map((input) =>
+              input.id === updatedInput.id
+                ? {
+                    ...input,
+                    input: updatedInput.input,
+                    quantity: updatedInput.quantity,
+                  }
+                : input
+            )
+          );
+        });
+    } catch (error) {
+      console.log(error);
+    }
+
+    setEditingInput(null);
   }
 
-  console.log(errors);
   async function deleteFinalProduct(id: string) {
     if (confirm("Tem certeza que deseja excluir esse produto?")) {
       await api.delete(`${restaurantURL}/products/delete-final-product`, {
@@ -424,24 +451,24 @@ export default function Products() {
                     return editingInput === input.id ? (
                       <form
                         onSubmit={handleEditInput(onSubmitFormEditProductInput)}
-                        key={input.id}
+                        key={input.input?.id}
                       >
-                        <label htmlFor="name">
+                        <label htmlFor={`name-${input.id}`}>
                           Nome
                           <input
                             type="text"
-                            id="name"
+                            id={`name-${input.id}`}
                             defaultValue={input.input?.name}
                             {...formEditInput(
                               `name.${input.id}` as keyof updateProductInputData
                             )}
                           />
                         </label>
-                        <label htmlFor="quantity">
+                        <label htmlFor={`quantity-${input.id}`}>
                           Quantidade
                           <input
                             type="number"
-                            id="quantity"
+                            id={`quantity-${input.id}`}
                             defaultValue={input.quantity}
                             {...formEditInput(
                               `quantity.${input.id}` as keyof updateProductInputData,
@@ -451,23 +478,23 @@ export default function Products() {
                             )}
                           />
                         </label>
-                        <label htmlFor="und">
+                        <label htmlFor={`und-${input.id}`}>
                           Unidade
                           <input
                             type="text"
-                            id="und"
+                            id={`und-${input.id}`}
                             defaultValue={input.input?.und}
                             {...formEditInput(
                               `und.${input.id}` as keyof updateProductInputData
                             )}
                           />
                         </label>
-                        <label htmlFor={`cost_in_cents_${input.id}`}>
+                        <label htmlFor={`cost_in_cents-${input.id}`}>
                           Custo por UND
                           <input
                             type="number"
-                            id={`cost_in_cents_${input.id}`}
-                            defaultValue={Number(input.input?.cost_in_cents)}
+                            id={`cost_in_cents-${input.id}`}
+                            defaultValue={input.input?.cost_in_cents}
                             {...formEditInput(
                               `cost_in_cents.${input.id}` as keyof updateProductInputData,
                               {
@@ -518,8 +545,8 @@ export default function Products() {
             <h1>
               {" "}
               Preço final: R$
-              {activeFinalProduct &&
-                activeFinalProduct[0].product.sell_price_in_cents}{" "}
+              {/*activeFinalProduct &&
+                activeFinalProduct[0].product.sell_price_in_cents*/}{" "}
             </h1>
           </div>
         </Modal>

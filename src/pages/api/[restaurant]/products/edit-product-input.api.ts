@@ -27,13 +27,10 @@ export default async function UpdateInput(
     return res.status(401).end();
   }
 
-  const restaurantId = String(req.query.restaurant);
 
   const { quantity, id, cost_in_cents, name, und } = updateInputSchema.parse(
     req.body
   );
-
-
 
   const edit_inputs = await prisma.productsInputs.update({
    where: { 
@@ -49,9 +46,20 @@ export default async function UpdateInput(
        }
      }
    }, 
+   select: { 
+     id: true,
+     quantity: true,
+     input: { 
+       select: { 
+         cost_in_cents: true,
+         name: true,
+         und: true,
+       }
+     },
+   }
  });
 
- console.log(req.body)
+ console.log(edit_inputs)
 
-  return res.json("");
+  return res.json(edit_inputs);
 }
