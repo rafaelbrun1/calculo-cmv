@@ -122,7 +122,6 @@ export default function Products() {
     register: formCreateProduct,
     control,
     handleSubmit: handleSubmitCreateProduct,
-    reset,
   } = useForm<createProductData>({
     resolver: zodResolver(createProductSchema),
   });
@@ -130,7 +129,9 @@ export default function Products() {
   const {
     register: formEditInput,
     handleSubmit: handleEditInput,
-    formState: { errors },
+    reset,
+    formState,
+    formState: { errors, isSubmitSuccessful },
   } = useForm<updateProductInputData>({
     resolver: zodResolver(updateInputSchema),
   });
@@ -286,6 +287,12 @@ export default function Products() {
 
     setEditingInput(null);
   }
+
+  useEffect(() => { 
+   if ( formState.isSubmitSuccessful || editingInput === null) { 
+     reset()
+   }
+  }, [formState, activeFinalProduct, reset, editingInput])
 
   async function deleteFinalProduct(id: string) {
     if (confirm("Tem certeza que deseja excluir esse produto?")) {
