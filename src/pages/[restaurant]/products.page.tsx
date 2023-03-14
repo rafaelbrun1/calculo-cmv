@@ -154,7 +154,7 @@ export default function Products() {
     }
   );
 
-  const { data: final_products } = useQuery<ProductsProps[]>(
+  const { data: final_products, isLoading } = useQuery<ProductsProps[]>(
     ["final_products"],
     async () => {
       const response = await api.get(
@@ -323,9 +323,9 @@ export default function Products() {
     }
   }
 
-  if (status === "loading") {
+  if (isLoading) {
     return <h1>carregando</h1>;
-  }
+  } 
 
   return (
     <>
@@ -552,8 +552,8 @@ export default function Products() {
             <h1>
               {" "}
               Preço final: R$
-              {/*activeFinalProduct &&
-                activeFinalProduct[0].product.sell_price_in_cents*/}{" "}
+              {activeFinalProduct &&
+                activeFinalProduct[0]?.product.sell_price_in_cents}{" "}
             </h1>
           </div>
         </Modal>

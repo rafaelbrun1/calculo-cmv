@@ -58,11 +58,45 @@ export default async function CreateFinalProduct(
     [{ id: "", price_multiplied_by_quantity: 0 }]
   );
 
-  const sell_price_in_cents = inputs_price_multiplied_by_quantity.reduce(
+  const processed_products_price = await prisma.procesedProducts.findMany({
+    select: {
+      id: true,
+      name: true,
+      sell_price_in_cents: true,
+    },
+    where: {
+      id: { in: input.map((item) => item.value) },
+    },
+  });
+
+  const processed_products_multiplied_by_quantity = input.reduce(
+    (accumulator, item) => {
+      const product = processed_products_price.find((p) => p.id === item.value);
+      if (product) {
+        accumulator.push({
+          id: item.value,
+          price_multiplied_by_quantity: product.sell_price_in_cents * item.quantity,
+        });
+      }
+      return accumulator;
+    },
+    [{ id: "", price_multiplied_by_quantity: 0 }]
+  );
+ 
+
+  const sell_price_in_cents_inputs = inputs_price_multiplied_by_quantity.reduce(
     (accumulator, currentValue) =>
       accumulator + currentValue.price_multiplied_by_quantity,
     0
   );
+
+  const sell_price_in_cents_processed_products = processed_products_multiplied_by_quantity.reduce(
+    (accumulator, currentValue) =>
+      accumulator + currentValue.price_multiplied_by_quantity,
+    0
+  );
+
+  const sell_price_in_cents = sell_price_in_cents_inputs + sell_price_in_cents_processed_products
 
   const final_product = await prisma.finalProducts.create({
     data: {
