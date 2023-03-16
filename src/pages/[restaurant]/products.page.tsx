@@ -119,7 +119,7 @@ export default function Products() {
   const [editingInput, setEditingInput] = useState<string | null | undefined>(
     null
   );
-  const [selectedOptions, setSelectedOptions] = useState<OptionsProps[]>([])
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([])
   
 
   const {
@@ -413,12 +413,17 @@ export default function Products() {
                               (item) => item.value === value?.value
                             )
                         )}
-                        onChange={() => { 
-                          console.log(value)
+                        onChange={(option: any) => { 
+                          const optionIndex = selectedOptions.findIndex((o) => o === option.value);
+                            if (optionIndex === -1) {
+                            onChange(setSelectedOptions([...selectedOptions, option.value]));
+                          } else {
+                            const newSelectedOption = selectedOptions.filter((o) => o !== option.value)
+                            onChange(setSelectedOptions(newSelectedOption));
+                          }
+                        
                         }}
-                        isOptionDisabled={(option) =>
-                          option.label === value.value
-                        }
+                        isOptionDisabled={(item: any) => selectedOptions.includes(item.value)}
                         hideSelectedOptions={true}
                       />
                     )}
