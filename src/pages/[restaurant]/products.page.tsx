@@ -110,6 +110,8 @@ export default function Products() {
   const [activeFinalProduct, setActiveFinalProduct] = useState<
     ProductsInputsProps[]
   >([]);
+  const [activeFinalProductPrice, setActiveFinalProductPrice] =
+    useState<number>();
   const [modalEditProcessedProduct, setModalEditProcessedProduct] =
     useState(false);
   const [activeProcessedProduct, setActiveProcessedProduct] =
@@ -117,6 +119,8 @@ export default function Products() {
   const [editingInput, setEditingInput] = useState<string | null | undefined>(
     null
   );
+  const [selectedOptions, setSelectedOptions] = useState<OptionsProps[]>([])
+  
 
   const {
     register: formCreateProduct,
@@ -207,6 +211,8 @@ export default function Products() {
       `/${router.query.restaurant}/products/get-final-products-inputs/${id}`
     );
     setActiveFinalProduct(response.data);
+    setActiveFinalProductPrice(response.data[0]?.product.sell_price_in_cents);
+    console.log(response.data);
     setModalEditProductsIsOpen(true);
   }
 
@@ -265,10 +271,11 @@ export default function Products() {
           name: String(Object.values(data.name)),
           und: String(Object.values(data.und)),
           quantity: Number(Object.values(data.quantity)),
+          prev_sell_price_in_cents_final_product: activeFinalProductPrice,
         })
         .then((response) => {
           const updatedInput = response.data;
-
+          setActiveFinalProductPrice(updatedInput.product.sell_price_in_cents);
           setActiveFinalProduct((prevState) =>
             prevState.map((input) =>
               input.id === updatedInput.id
@@ -284,15 +291,15 @@ export default function Products() {
     } catch (error) {
       console.log(error);
     }
-
+    queryClient.invalidateQueries(["final_products"]);
     setEditingInput(null);
   }
 
-  useEffect(() => { 
-   if ( formState.isSubmitSuccessful || editingInput === null) { 
-     reset()
-   }
-  }, [formState, activeFinalProduct, reset, editingInput])
+  useEffect(() => {
+    if (formState.isSubmitSuccessful) {
+      reset();
+    }
+  }, [formState, activeFinalProduct, reset]);
 
   async function deleteFinalProduct(id: string) {
     if (confirm("Tem certeza que deseja excluir esse produto?")) {
@@ -325,7 +332,7 @@ export default function Products() {
 
   if (isLoading) {
     return <h1>carregando</h1>;
-  } 
+  }
 
   return (
     <>
@@ -406,7 +413,13 @@ export default function Products() {
                               (item) => item.value === value?.value
                             )
                         )}
-                        onChange={onChange}
+                        onChange={() => { 
+                          console.log(value)
+                        }}
+                        isOptionDisabled={(option) =>
+                          option.label === value.value
+                        }
+                        hideSelectedOptions={true}
                       />
                     )}
                   />
@@ -510,7 +523,12 @@ export default function Products() {
                             )}
                           />
                         </label>
-                        <button onClick={() => setEditingInput(null)}>
+                        <button
+                          onClick={() => {
+                            reset();
+                            setEditingInput(null);
+                          }}
+                        >
                           Cancelar
                         </button>
                         <button type="submit"> Salvar </button>
@@ -552,8 +570,7 @@ export default function Products() {
             <h1>
               {" "}
               Preço final: R$
-              {activeFinalProduct &&
-                activeFinalProduct[0]?.product.sell_price_in_cents}{" "}
+              {activeFinalProductPrice}{" "}
             </h1>
           </div>
         </Modal>
