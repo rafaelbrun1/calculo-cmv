@@ -119,8 +119,28 @@ export default function Products() {
   const [editingInput, setEditingInput] = useState<string | null | undefined>(
     null
   );
-  const [selectedOptions, setSelectedOptions] = useState<string[]>([])
-  
+  const [selectedOptions, setSelectedOptions] = useState<Array<Array<string>>>(
+    []
+  );
+
+  const onChangeSelect = (option: any, index: number) => {
+    const currentSelectedOptions = [...selectedOptions];
+    const currentOptions = currentSelectedOptions[index] || [];
+
+    console.log(option.value);
+    const optionIndex =
+      currentOptions && currentOptions.findIndex((o) => o === option.value);
+    if (optionIndex === -1) {
+      currentSelectedOptions[index] = [...currentOptions, option.value];
+    } else {
+      currentSelectedOptions[index] =
+        currentOptions && currentOptions.filter((o) => o !== option.value);
+    }
+
+    console.log("selectedOptions", selectedOptions);
+
+    setSelectedOptions(currentSelectedOptions);
+  };
 
   const {
     register: formCreateProduct,
@@ -143,6 +163,7 @@ export default function Products() {
   const { fields, append, remove } = useFieldArray({
     name: "input",
     control,
+    keyName: "id",
   });
 
   const router = useRouter();
@@ -413,17 +434,13 @@ export default function Products() {
                               (item) => item.value === value?.value
                             )
                         )}
-                        onChange={(option: any) => { 
-                          const optionIndex = selectedOptions.findIndex((o) => o === option.value);
-                            if (optionIndex === -1) {
-                            onChange(setSelectedOptions([...selectedOptions, option.value]));
-                          } else {
-                            const newSelectedOption = selectedOptions.filter((o) => o !== option.value)
-                            onChange(setSelectedOptions(newSelectedOption));
-                          }
-                        
+                        onChange={(option: any) => {
+                          onChangeSelect(option, index);
                         }}
-                        isOptionDisabled={(item: any) => selectedOptions.includes(item.value)}
+                        isOptionDisabled={(item: any) =>
+                          selectedOptions[index] &&
+                          selectedOptions[index].includes(item.value)
+                        }
                         hideSelectedOptions={true}
                       />
                     )}
