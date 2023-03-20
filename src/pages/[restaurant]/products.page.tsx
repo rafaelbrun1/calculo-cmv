@@ -140,7 +140,7 @@ export default function Products() {
       newSelectedOptions[findIndexSelectedOptions] = { value, index };
       setSelectedOptions([...newSelectedOptions]);
     }
-    console.log(selectedOptions.entries())
+    console.log(selectedOptions.entries());
   }
 
   const {
@@ -437,9 +437,13 @@ export default function Products() {
                         )}
                         onChange={(option: any) => {
                           onChangeOptionSelect(option.value, index);
-                          console.log(selectedOptions)
+                          console.log(selectedOptions);
                         }}
-                        isOptionDisabled={(option: any) => selectedOptions.map(item => item.value).includes(option.value)}
+                        isOptionDisabled={(option: any) =>
+                          selectedOptions
+                            .map((item) => item.value)
+                            .includes(option.value)
+                        }
                         hideSelectedOptions={true}
                       />
                     )}
@@ -452,12 +456,32 @@ export default function Products() {
                     })}
                     placeholder="Quantidade"
                   />
-                  <button type="button" onClick={() => remove(index)}>
+                  <button onClick={() => console.log("index atual:", index)}>
+                    {" "}
+                    qual index é
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newSelectedOptions = selectedOptions.filter(
+                        (item) => item.index !== index
+                      );
+                      const newOptions = newSelectedOptions.map((item) => {
+                        if (item.index > index) {
+                          item.index--;
+                        }
+                        return item;
+                      });
+                      setSelectedOptions([...newOptions]);
+                      remove(index);
+                    }}
+                  >
                     REMOVER
                   </button>
                 </div>
               );
             })}
+
             <button
               type="button"
               onClick={() =>
@@ -471,6 +495,7 @@ export default function Products() {
             >
               APPEND
             </button>
+
             <button type="submit">Cadastrar produto</button>
           </form>
         </Modal>
