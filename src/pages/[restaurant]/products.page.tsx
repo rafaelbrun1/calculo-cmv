@@ -91,6 +91,11 @@ interface updateProductInputData {
   };
 }
 
+interface SelectedOptionsProps {
+  value: string;
+  index: number;
+}
+
 const customStyles = {
   content: {
     top: "50%",
@@ -119,28 +124,24 @@ export default function Products() {
   const [editingInput, setEditingInput] = useState<string | null | undefined>(
     null
   );
-  const [selectedOptions, setSelectedOptions] = useState<Array<Array<string>>>(
-    []
-  );
+  const [selectedOptions, setSelectedOptions] = useState<
+    SelectedOptionsProps[]
+  >([]);
 
-  const onChangeSelect = (option: any, index: number) => {
-    const currentSelectedOptions = [...selectedOptions];
-    const currentOptions = currentSelectedOptions[index] || [];
+  function onChangeOptionSelect(value: string, index: number) {
+    const newSelectedOptions = [...selectedOptions];
+    const findIndexSelectedOptions = newSelectedOptions.findIndex(
+      (i) => i.index === index
+    );
 
-    console.log(option.value);
-    const optionIndex =
-      currentOptions && currentOptions.findIndex((o) => o === option.value);
-    if (optionIndex === -1) {
-      currentSelectedOptions[index] = [...currentOptions, option.value];
+    if (!newSelectedOptions[findIndexSelectedOptions]) {
+      setSelectedOptions([...newSelectedOptions, { value, index }]);
     } else {
-      currentSelectedOptions[index] =
-        currentOptions && currentOptions.filter((o) => o !== option.value);
+      newSelectedOptions[findIndexSelectedOptions] = { value, index };
+      setSelectedOptions([...newSelectedOptions]);
     }
-
-    console.log("selectedOptions", selectedOptions);
-
-    setSelectedOptions(currentSelectedOptions);
-  };
+    console.log(selectedOptions.entries())
+  }
 
   const {
     register: formCreateProduct,
@@ -435,12 +436,10 @@ export default function Products() {
                             )
                         )}
                         onChange={(option: any) => {
-                          onChangeSelect(option, index);
+                          onChangeOptionSelect(option.value, index);
+                          console.log(selectedOptions)
                         }}
-                        isOptionDisabled={(item: any) =>
-                          selectedOptions[index] &&
-                          selectedOptions[index].includes(item.value)
-                        }
+                        isOptionDisabled={(option: any) => selectedOptions.map(item => item.value).includes(option.value)}
                         hideSelectedOptions={true}
                       />
                     )}
