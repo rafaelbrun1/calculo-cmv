@@ -128,7 +128,7 @@ export default async function CreateFinalProduct(
   });
 
   Promise.all(create_products_inputs);
-
+  console.log(req.body)
 
   return res.json(inputs_price);
 }

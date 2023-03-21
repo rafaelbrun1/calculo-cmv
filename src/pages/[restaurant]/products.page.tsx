@@ -96,6 +96,15 @@ interface SelectedOptionsProps {
   index: number;
 }
 
+interface CreateInputOnEditProps { 
+  input: { 
+    label: string;
+    value: string;
+    quantity: number;
+    input_type: string;
+  }[]
+}
+
 const customStyles = {
   content: {
     top: "50%",
@@ -144,8 +153,9 @@ export default function Products() {
   }
 
   const {
+    getValues,
     register: formCreateProduct,
-    control,
+    control: controlCreateProduct,
     handleSubmit: handleSubmitCreateProduct,
   } = useForm<createProductData>({
     resolver: zodResolver(createProductSchema),
@@ -161,9 +171,17 @@ export default function Products() {
     resolver: zodResolver(updateInputSchema),
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { control: controlOnEditProduct} = useForm<CreateInputOnEditProps>()
+
+  const { fields: fieldsOnCreateProduct, append: appendOnCreateProduct, remove: removeOnCreateProduct } = useFieldArray({
     name: "input",
-    control,
+    control: controlCreateProduct,
+    
+  });
+
+  const { fields: fieldsOnEditProducts, append: appendOnEditProducts, remove: removeOnEditProducts } = useFieldArray<CreateInputOnEditProps>({
+    name: "input",
+    control: controlOnEditProduct,
     keyName: "id",
   });
 
@@ -225,6 +243,8 @@ export default function Products() {
   }
 
   function closeModal() {
+    setSelectedOptions([])
+    removeOnCreateProduct()
     setIsOpen(false);
   }
 
@@ -240,6 +260,7 @@ export default function Products() {
 
   function closeModalEditProducts() {
     setModalEditProductsIsOpen(false);
+    removeOnEditProducts()
     setEditingInput(null);
   }
 
@@ -258,7 +279,7 @@ export default function Products() {
   const queryClient = useQueryClient();
 
   const onSubmitFormCreateProduct = async (data: createProductData) => {
-    if (data.type === "final") {
+    /*if (data.type === "final") {
       try {
         await api.post(`/${restaurantURL}/products/create-final-products`, {
           product_name: data.product_name,
@@ -281,7 +302,8 @@ export default function Products() {
       } catch (error) {
         console.log(error);
       }
-    }
+    }*/
+    console.log(data, getValues())
   };
 
   async function onSubmitFormEditProductInput(data: updateProductInputData) {
@@ -419,25 +441,26 @@ export default function Products() {
               {...formCreateProduct("product_name")}
             />
 
-            {fields.map((input, index) => {
+            {fieldsOnCreateProduct.map((input, index) => {
               return (
                 <div key={input.id}>
                   <Controller
-                    control={control}
-                    name={`input.${index}` as const}
-                    render={({ field: { onChange, value } }) => (
+                    control={controlCreateProduct}
+                    {...formCreateProduct(`input.${index}`)}
+                    render={({ field: { onChange, value,} }) => (
                       <Select
                         options={groupedOptions}
                         value={groupedOptions.find(
                           (c) =>
                             value ===
                             c.options.find(
-                              (item) => item.value === value?.value
+                              (item) => item.value === value.value
                             )
                         )}
+                        
                         onChange={(option: any) => {
+                          console.log(value, option)
                           onChangeOptionSelect(option.value, index);
-                          console.log(selectedOptions);
                         }}
                         isOptionDisabled={(option: any) =>
                           selectedOptions
@@ -456,10 +479,7 @@ export default function Products() {
                     })}
                     placeholder="Quantidade"
                   />
-                  <button onClick={() => console.log("index atual:", index)}>
-                    {" "}
-                    qual index é
-                  </button>
+
                   <button
                     type="button"
                     onClick={() => {
@@ -473,7 +493,7 @@ export default function Products() {
                         return item;
                       });
                       setSelectedOptions([...newOptions]);
-                      remove(index);
+                      removeOnCreateProduct(index);
                     }}
                   >
                     REMOVER
@@ -485,7 +505,7 @@ export default function Products() {
             <button
               type="button"
               onClick={() =>
-                append({
+                appendOnCreateProduct({
                   quantity: 0,
                   value: "",
                   label: "",
@@ -610,6 +630,76 @@ export default function Products() {
               </>
             ) : null}
           </>
+
+            <form>
+              {fieldsOnEditProducts.map((input, index) => {
+              return (
+                <div key={input.id}>
+                  <Controller
+                    control={controlOnEditProduct}
+                    name={`input.${index}` as const}
+                    render={({ field: { onChange, value } }) => (
+                      <Select
+                        options={groupedOptions}
+                        value={groupedOptions.find(
+                          (c) =>
+                            value ===
+                            c.options.find(
+                              (item) => item.value === value?.value
+                            )
+                        )}
+                        onChange={(option: any) => {
+                          console.log(value)
+                          onChangeOptionSelect(option.value, index);
+                        }}
+                        isOptionDisabled={(option: any) =>
+                          selectedOptions
+                            .map((item) => item.value)
+                            .includes(option.value)
+                        }
+                        hideSelectedOptions={true}
+                      />
+                    )}
+                  />
+
+                   <button
+                    type="button"
+                    onClick={() => {
+                      const newSelectedOptions = selectedOptions.filter(
+                        (item) => item.index !== index
+                      );
+                      const newOptions = newSelectedOptions.map((item) => {
+                        if (item.index > index) {
+                          item.index--;
+                        }
+                        return item;
+                      });
+                      setSelectedOptions([...newOptions]);
+                      removeOnEditProducts(index);
+                    }}
+                  >
+                    REMOVER
+                  </button>
+                </div>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={() =>
+                appendOnEditProducts({
+                  quantity: 0,
+                  value: "",
+                  label: "",
+                  input_type: "",
+                })
+              }
+            >
+              Adicionar novo insumo
+            </button>
+
+            <button type="submit">Salvar novo(s) insumo(s)</button>
+          </form>
 
           <div>
             {" "}
