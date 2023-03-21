@@ -303,7 +303,7 @@ export default function Products() {
         console.log(error);
       }
     }*/
-    console.log(data, getValues())
+    console.log(data)
   };
 
   async function onSubmitFormEditProductInput(data: updateProductInputData) {
@@ -446,8 +446,8 @@ export default function Products() {
                 <div key={input.id}>
                   <Controller
                     control={controlCreateProduct}
-                    {...formCreateProduct(`input.${index}`)}
-                    render={({ field: { onChange, value,} }) => (
+                    name={`input.${index}` as const}
+                    render={({ field: { onChange, value} }) => (
                       <Select
                         options={groupedOptions}
                         value={groupedOptions.find(
@@ -459,7 +459,7 @@ export default function Products() {
                         )}
                         
                         onChange={(option: any) => {
-                          console.log(value, option)
+                          onChange(option)
                           onChangeOptionSelect(option.value, index);
                         }}
                         isOptionDisabled={(option: any) =>
