@@ -96,14 +96,23 @@ interface SelectedOptionsProps {
   index: number;
 }
 
-interface CreateInputOnEditProps { 
-  input: { 
+interface CreateInputOnEditProps {
+  input: {
     label: string;
     value: string;
     quantity: number;
     input_type: string;
-  }[]
+  }[];
 }
+
+const createInputOnEditSchema = z.object({ 
+  input: z.object({ 
+    label: z.string(),
+    value: z.string(),
+    quantity: z.number(),
+    input_type: z.string(),
+  }).array()
+})
 
 const customStyles = {
   content: {
@@ -136,6 +145,7 @@ export default function Products() {
   const [selectedOptions, setSelectedOptions] = useState<
     SelectedOptionsProps[]
   >([]);
+  const [activeIdFinalProduct, setActiveIdFinalProduct] = useState<string>('')
 
   function onChangeOptionSelect(value: string, index: number) {
     const newSelectedOptions = [...selectedOptions];
@@ -153,7 +163,6 @@ export default function Products() {
   }
 
   const {
-    getValues,
     register: formCreateProduct,
     control: controlCreateProduct,
     handleSubmit: handleSubmitCreateProduct,
@@ -171,15 +180,24 @@ export default function Products() {
     resolver: zodResolver(updateInputSchema),
   });
 
-  const { control: controlOnEditProduct} = useForm<CreateInputOnEditProps>()
-
-  const { fields: fieldsOnCreateProduct, append: appendOnCreateProduct, remove: removeOnCreateProduct } = useFieldArray({
-    name: "input",
-    control: controlCreateProduct,
-    
+  const { register: formAddInputAtProduct, control: controlOnEditProduct, handleSubmit: handleSubmitAddInputonEdit, formState: { errors: err} } = useForm<CreateInputOnEditProps>({ 
+ resolver: zodResolver(createInputOnEditSchema)
   });
 
-  const { fields: fieldsOnEditProducts, append: appendOnEditProducts, remove: removeOnEditProducts } = useFieldArray<CreateInputOnEditProps>({
+  const {
+    fields: fieldsOnCreateProduct,
+    append: appendOnCreateProduct,
+    remove: removeOnCreateProduct,
+  } = useFieldArray({
+    name: "input",
+    control: controlCreateProduct,
+  });
+
+  const {
+    fields: fieldsOnEditProducts,
+    append: appendOnEditProducts,
+    remove: removeOnEditProducts,
+  } = useFieldArray<CreateInputOnEditProps>({
     name: "input",
     control: controlOnEditProduct,
     keyName: "id",
@@ -243,12 +261,13 @@ export default function Products() {
   }
 
   function closeModal() {
-    setSelectedOptions([])
-    removeOnCreateProduct()
+    setSelectedOptions([]);
+    removeOnCreateProduct();
     setIsOpen(false);
   }
 
   async function openModalEditFinalProduct(id: string) {
+    setActiveIdFinalProduct(id)
     const response = await api.get(
       `/${router.query.restaurant}/products/get-final-products-inputs/${id}`
     );
@@ -260,7 +279,7 @@ export default function Products() {
 
   function closeModalEditProducts() {
     setModalEditProductsIsOpen(false);
-    removeOnEditProducts()
+    removeOnEditProducts();
     setEditingInput(null);
   }
 
@@ -279,7 +298,7 @@ export default function Products() {
   const queryClient = useQueryClient();
 
   const onSubmitFormCreateProduct = async (data: createProductData) => {
-    /*if (data.type === "final") {
+    if (data.type === "final") {
       try {
         await api.post(`/${restaurantURL}/products/create-final-products`, {
           product_name: data.product_name,
@@ -302,8 +321,8 @@ export default function Products() {
       } catch (error) {
         console.log(error);
       }
-    }*/
-    console.log(data)
+    }
+    
   };
 
   async function onSubmitFormEditProductInput(data: updateProductInputData) {
@@ -338,7 +357,18 @@ export default function Products() {
     queryClient.invalidateQueries(["final_products"]);
     setEditingInput(null);
   }
-
+  
+  
+  async function onSubmitFormAddInputOnEditProduct(data: CreateInputOnEditProps) { 
+    try {
+      await api.post(`${restaurantURL}/products/create-input-final-product`, {
+        input: data.input,
+        id: activeIdFinalProduct,
+      })
+    } catch (error) {
+      console.log(error)
+    }
+  }
   useEffect(() => {
     if (formState.isSubmitSuccessful) {
       reset();
@@ -447,19 +477,16 @@ export default function Products() {
                   <Controller
                     control={controlCreateProduct}
                     name={`input.${index}` as const}
-                    render={({ field: { onChange, value} }) => (
+                    render={({ field: { onChange, value } }) => (
                       <Select
                         options={groupedOptions}
                         value={groupedOptions.find(
                           (c) =>
                             value ===
-                            c.options.find(
-                              (item) => item.value === value.value
-                            )
+                            c.options.find((item) => item.value === value.value)
                         )}
-                        
                         onChange={(option: any) => {
-                          onChange(option)
+                          onChange(option);
                           onChangeOptionSelect(option.value, index);
                         }}
                         isOptionDisabled={(option: any) =>
@@ -631,8 +658,8 @@ export default function Products() {
             ) : null}
           </>
 
-            <form>
-              {fieldsOnEditProducts.map((input, index) => {
+          <form onSubmit={handleSubmitAddInputonEdit(onSubmitFormAddInputOnEditProduct)}>
+            {fieldsOnEditProducts.map((input, index) => {
               return (
                 <div key={input.id}>
                   <Controller
@@ -649,7 +676,7 @@ export default function Products() {
                             )
                         )}
                         onChange={(option: any) => {
-                          console.log(value)
+                          onChange(option)
                           onChangeOptionSelect(option.value, index);
                         }}
                         isOptionDisabled={(option: any) =>
@@ -661,8 +688,11 @@ export default function Products() {
                       />
                     )}
                   />
+                  <input type="number" {...formAddInputAtProduct(`input.${index}.quantity`, { 
+                    valueAsNumber: true,
+                  })} placeholder="Quantidade" />
 
-                   <button
+                  <button
                     type="button"
                     onClick={() => {
                       const newSelectedOptions = selectedOptions.filter(
