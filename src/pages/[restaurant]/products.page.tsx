@@ -364,10 +364,21 @@ export default function Products() {
       await api.post(`${restaurantURL}/products/create-input-final-product`, {
         input: data.input,
         id: activeIdFinalProduct,
-      })
+      }).then(response => setActiveFinalProduct((prev) => [...prev, response.data].flat()))
+      
     } catch (error) {
       console.log(error)
     }
+    try { 
+      await api.put(`${restaurantURL}/products/edit-final-product-price`, { 
+        input: data.input, 
+        id: activeIdFinalProduct
+      }).then(response => setActiveFinalProductPrice(response.data.sell_price_in_cents))
+    } catch (error) { 
+      console.log(error)
+    }
+    queryClient.invalidateQueries(["final_products"]);
+    removeOnEditProducts()
   }
   useEffect(() => {
     if (formState.isSubmitSuccessful) {
@@ -403,6 +414,32 @@ export default function Products() {
       console.log("cancelado");
     }
   }
+
+  async function deleteInputProduct(id: string, cost?: number) { 
+    const inputId = id
+    if (confirm("Tem certeza que deseja excluir esse insumo?")) {
+      await api.delete(`${restaurantURL}/products/delete-input-product`, {
+        data: {
+          id,
+        },
+      })
+      
+      setActiveFinalProduct(prev => prev.filter(input => input.id !== id));
+
+       await api.put(`${restaurantURL}/products/edit-price-on-delete-input`, { 
+          cost_in_cents: cost,
+          finalProductId: activeIdFinalProduct
+        
+      })
+
+      setActiveFinalProductPrice((prev) => (prev ?? 0) - (cost ?? 0))
+      queryClient.invalidateQueries(["final_products"]);
+    } else {
+      console.log("cancelado");
+    }
+
+  }
+
 
   if (isLoading) {
     return <h1>carregando</h1>;
@@ -636,7 +673,7 @@ export default function Products() {
                           <button onClick={() => setEditingInput(input.id)}>
                             Editar
                           </button>
-                          <button>Excluir</button>
+                          <button onClick={() => deleteInputProduct(input.id, input.input ? input.input?.cost_in_cents * input.quantity : 0)}>Excluir</button>
                         </div>
                       </div>
                     );

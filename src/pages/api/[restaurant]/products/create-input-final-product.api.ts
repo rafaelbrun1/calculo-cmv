@@ -34,7 +34,7 @@ export default async function CreateInputFinalProduct(
 
   const { input, id } = createInputOnProductSchema.parse(req.body);
 
-  const create_products_inputs = input.map((item) => {
+  const create_products_inputs = await Promise.all(input.map((item) => {
     if (item.input_type === "input") {
       return prisma.productsInputs.create({
         data: {
@@ -43,6 +43,24 @@ export default async function CreateInputFinalProduct(
           final_productsId: id,
           restaurantId,
         },
+        select: { 
+          id: true,
+          quantity: true,
+          input: { 
+            select: { 
+              id: true,
+              name: true,
+              und: true,
+              cost_in_cents: true,
+            }, 
+          }, 
+          processedProducts: { 
+            select: { 
+              id: true, 
+              name: true,
+            }
+          }
+        }
       });
     }
     return prisma.productsInputs.create({
@@ -53,12 +71,9 @@ export default async function CreateInputFinalProduct(
         restaurantId,
       },
     });
-  });
+  }));
 
-  
+  console.log(create_products_inputs)
 
-  Promise.all(create_products_inputs);
-
-
-  return res.json("");
+  return res.json(create_products_inputs);
 }
