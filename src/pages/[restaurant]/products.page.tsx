@@ -105,14 +105,16 @@ interface CreateInputOnEditProps {
   }[];
 }
 
-const createInputOnEditSchema = z.object({ 
-  input: z.object({ 
-    label: z.string(),
-    value: z.string(),
-    quantity: z.number(),
-    input_type: z.string(),
-  }).array()
-})
+const createInputOnEditSchema = z.object({
+  input: z
+    .object({
+      label: z.string(),
+      value: z.string(),
+      quantity: z.number(),
+      input_type: z.string(),
+    })
+    .array(),
+});
 
 const customStyles = {
   content: {
@@ -145,7 +147,7 @@ export default function Products() {
   const [selectedOptions, setSelectedOptions] = useState<
     SelectedOptionsProps[]
   >([]);
-  const [activeIdFinalProduct, setActiveIdFinalProduct] = useState<string>('')
+  const [activeIdFinalProduct, setActiveIdFinalProduct] = useState<string>("");
 
   function onChangeOptionSelect(value: string, index: number) {
     const newSelectedOptions = [...selectedOptions];
@@ -180,8 +182,13 @@ export default function Products() {
     resolver: zodResolver(updateInputSchema),
   });
 
-  const { register: formAddInputAtProduct, control: controlOnEditProduct, handleSubmit: handleSubmitAddInputonEdit, formState: { errors: err} } = useForm<CreateInputOnEditProps>({ 
- resolver: zodResolver(createInputOnEditSchema)
+  const {
+    register: formAddInputAtProduct,
+    control: controlOnEditProduct,
+    handleSubmit: handleSubmitAddInputonEdit,
+    formState: { errors: err },
+  } = useForm<CreateInputOnEditProps>({
+    resolver: zodResolver(createInputOnEditSchema),
   });
 
   const {
@@ -267,7 +274,7 @@ export default function Products() {
   }
 
   async function openModalEditFinalProduct(id: string) {
-    setActiveIdFinalProduct(id)
+    setActiveIdFinalProduct(id);
     const response = await api.get(
       `/${router.query.restaurant}/products/get-final-products-inputs/${id}`
     );
@@ -279,6 +286,7 @@ export default function Products() {
 
   function closeModalEditProducts() {
     setModalEditProductsIsOpen(false);
+    setSelectedOptions([])
     removeOnEditProducts();
     setEditingInput(null);
   }
@@ -322,7 +330,6 @@ export default function Products() {
         console.log(error);
       }
     }
-    
   };
 
   async function onSubmitFormEditProductInput(data: updateProductInputData) {
@@ -357,28 +364,36 @@ export default function Products() {
     queryClient.invalidateQueries(["final_products"]);
     setEditingInput(null);
   }
-  
-  
-  async function onSubmitFormAddInputOnEditProduct(data: CreateInputOnEditProps) { 
+
+  async function onSubmitFormAddInputOnEditProduct(
+    data: CreateInputOnEditProps
+  ) {
     try {
-      await api.post(`${restaurantURL}/products/create-input-final-product`, {
-        input: data.input,
-        id: activeIdFinalProduct,
-      }).then(response => setActiveFinalProduct((prev) => [...prev, response.data].flat()))
-      
+      await api
+        .post(`${restaurantURL}/products/create-input-final-product`, {
+          input: data.input,
+          id: activeIdFinalProduct,
+        })
+        .then((response) =>
+          setActiveFinalProduct((prev) => [...prev, response.data].flat())
+        );
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
-    try { 
-      await api.put(`${restaurantURL}/products/edit-final-product-price`, { 
-        input: data.input, 
-        id: activeIdFinalProduct
-      }).then(response => setActiveFinalProductPrice(response.data.sell_price_in_cents))
-    } catch (error) { 
-      console.log(error)
+    try {
+      await api
+        .put(`${restaurantURL}/products/edit-final-product-price`, {
+          input: data.input,
+          id: activeIdFinalProduct,
+        })
+        .then((response) =>
+          setActiveFinalProductPrice(response.data.sell_price_in_cents)
+        );
+    } catch (error) {
+      console.log(error);
     }
     queryClient.invalidateQueries(["final_products"]);
-    removeOnEditProducts()
+    removeOnEditProducts();
   }
   useEffect(() => {
     if (formState.isSubmitSuccessful) {
@@ -415,31 +430,27 @@ export default function Products() {
     }
   }
 
-  async function deleteInputProduct(id: string, cost?: number) { 
-    const inputId = id
+  async function deleteInputProduct(id: string, cost?: number) {
     if (confirm("Tem certeza que deseja excluir esse insumo?")) {
       await api.delete(`${restaurantURL}/products/delete-input-product`, {
         data: {
           id,
         },
-      })
-      
-      setActiveFinalProduct(prev => prev.filter(input => input.id !== id));
+      });
 
-       await api.put(`${restaurantURL}/products/edit-price-on-delete-input`, { 
-          cost_in_cents: cost,
-          finalProductId: activeIdFinalProduct
-        
-      })
+      setActiveFinalProduct((prev) => prev.filter((input) => input.id !== id));
 
-      setActiveFinalProductPrice((prev) => (prev ?? 0) - (cost ?? 0))
+      await api.put(`${restaurantURL}/products/edit-price-on-delete-input`, {
+        cost_in_cents: cost,
+        finalProductId: activeIdFinalProduct,
+      });
+
+      setActiveFinalProductPrice((prev) => (prev ?? 0) - (cost ?? 0));
       queryClient.invalidateQueries(["final_products"]);
     } else {
       console.log("cancelado");
     }
-
   }
-
 
   if (isLoading) {
     return <h1>carregando</h1>;
@@ -596,7 +607,7 @@ export default function Products() {
             activeFinalProduct.some((item) => item.input !== null) ? (
               <>
                 <h1>Insumos</h1>
-                {activeFinalProduct.map((input, index) => {
+                {activeFinalProduct.map((input) => {
                   {
                     return editingInput === input.id ? (
                       <form
@@ -673,7 +684,18 @@ export default function Products() {
                           <button onClick={() => setEditingInput(input.id)}>
                             Editar
                           </button>
-                          <button onClick={() => deleteInputProduct(input.id, input.input ? input.input?.cost_in_cents * input.quantity : 0)}>Excluir</button>
+                          <button
+                            onClick={() =>
+                              deleteInputProduct(
+                                input.id,
+                                input.input
+                                  ? input.input?.cost_in_cents * input.quantity
+                                  : 0
+                              )
+                            }
+                          >
+                            Excluir
+                          </button>
                         </div>
                       </div>
                     );
@@ -695,7 +717,11 @@ export default function Products() {
             ) : null}
           </>
 
-          <form onSubmit={handleSubmitAddInputonEdit(onSubmitFormAddInputOnEditProduct)}>
+          <form
+            onSubmit={handleSubmitAddInputonEdit(
+              onSubmitFormAddInputOnEditProduct
+            )}
+          >
             {fieldsOnEditProducts.map((input, index) => {
               return (
                 <div key={input.id}>
@@ -713,21 +739,26 @@ export default function Products() {
                             )
                         )}
                         onChange={(option: any) => {
-                          onChange(option)
+                          onChange(option);
                           onChangeOptionSelect(option.value, index);
                         }}
                         isOptionDisabled={(option: any) =>
                           selectedOptions
                             .map((item) => item.value)
+                            .includes(option.value) || activeFinalProduct.map((item) => item.input?.id)
                             .includes(option.value)
                         }
                         hideSelectedOptions={true}
                       />
                     )}
                   />
-                  <input type="number" {...formAddInputAtProduct(`input.${index}.quantity`, { 
-                    valueAsNumber: true,
-                  })} placeholder="Quantidade" />
+                  <input
+                    type="number"
+                    {...formAddInputAtProduct(`input.${index}.quantity`, {
+                      valueAsNumber: true,
+                    })}
+                    placeholder="Quantidade"
+                  />
 
                   <button
                     type="button"
