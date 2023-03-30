@@ -17,11 +17,14 @@ export default async function GetProcessedProductsInputs(
         procesedProductsId: id,
       },
       select: {
+        id: true,
         quantity: true,
         inputs: {
           select: {
             id: true,
             name: true,
+            und: true,
+            cost_in_cents: true,
           },
         },
         processedProductsAsInput: {
@@ -30,6 +33,11 @@ export default async function GetProcessedProductsInputs(
             name: true,
           },
         },
+        processedProducts: { 
+          select: { 
+            sell_price_in_cents: true,
+          }
+        }
       },
     });
 

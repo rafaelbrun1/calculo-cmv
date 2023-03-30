@@ -4,7 +4,7 @@ import { unstable_getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "../../auth/[...nextauth].api";
 
-const createInputOnProductSchema = z.object({
+const createInputOnProcessedProductSchema = z.object({
   id: z.string(),
   input: z
     .object({
@@ -32,21 +32,21 @@ export default async function CreateInputFinalProduct(
 
   const restaurantId = String(req.query.restaurant);
 
-  const { input, id } = createInputOnProductSchema.parse(req.body);
+  const { input, id } = createInputOnProcessedProductSchema.parse(req.body);
 
-  const create_products_inputs = await Promise.all(input.map((item) => {
+  const create_processed_products_inputs = await Promise.all(input.map((item) => {
     if (item.input_type === "input") {
-      return prisma.productsInputs.create({
+      return prisma.processedProductsInputs.create({
         data: {
           quantity: item.quantity,
           inputsId: item.value,
-          final_productsId: id,
+          procesedProductsId: id,
           restaurantId,
         },
         select: { 
           id: true,
           quantity: true,
-          input: { 
+          inputs: { 
             select: { 
               id: true,
               name: true,
@@ -63,17 +63,17 @@ export default async function CreateInputFinalProduct(
         }
       });
     }
-    return prisma.productsInputs.create({
+    return prisma.processedProductsInputs.create({
       data: {
         quantity: item.quantity,
-        procesedProductsId: item.value,
-        final_productsId: id,
+        processedProductsIdAsInput: item.value,
+        procesedProductsId: id,
         restaurantId,
       },
       select: { 
         id: true,
         quantity: true,
-        input: { 
+        inputs: { 
           select: { 
             id: true,
             name: true,
@@ -81,7 +81,7 @@ export default async function CreateInputFinalProduct(
             cost_in_cents: true,
           }, 
         }, 
-        processedProducts: { 
+        processedProductsAsInput: { 
           select: { 
             id: true, 
             name: true,
@@ -91,7 +91,6 @@ export default async function CreateInputFinalProduct(
     });
   }));
 
-  console.log(create_products_inputs)
 
-  return res.json(create_products_inputs);
+  return res.json(create_processed_products_inputs);
 }

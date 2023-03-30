@@ -34,15 +34,21 @@ interface ProductsInputsProps {
 }
 
 interface ProcessedProductsInputsProps {
+  id: string;
   quantity: number;
   inputs?: {
     id: string;
     name: string;
+    und: string; 
+    cost_in_cents: number;
   };
   processedProductsAsInput?: {
     id: string;
     name: string;
   };
+  processedProducts: { 
+    sell_price_in_cents: number;
+  }
 }
 
 interface GroupedOptionProps {
@@ -137,10 +143,12 @@ export default function Products() {
   >([]);
   const [activeFinalProductPrice, setActiveFinalProductPrice] =
     useState<number>();
+    const [activeFinalProcessedProductPrice, setActiveFinalProcessedProductPrice] =
+    useState<number>();
   const [modalEditProcessedProduct, setModalEditProcessedProduct] =
     useState(false);
   const [activeProcessedProduct, setActiveProcessedProduct] =
-    useState<ProcessedProductsInputsProps[]>();
+    useState<ProcessedProductsInputsProps[]>([]);
   const [editingInput, setEditingInput] = useState<string | null | undefined>(
     null
   );
@@ -148,6 +156,7 @@ export default function Products() {
     SelectedOptionsProps[]
   >([]);
   const [activeIdFinalProduct, setActiveIdFinalProduct] = useState<string>("");
+  const [activeIdProcessedProduct, setActiveIdProcessedProduct] = useState<string>("");
 
   function onChangeOptionSelect(value: string, index: number) {
     const newSelectedOptions = [...selectedOptions];
@@ -183,10 +192,26 @@ export default function Products() {
   });
 
   const {
+    register: formEditInputProcessedProducts,
+    handleSubmit: handleEditInputProcessedProducts,
+  } = useForm<updateProductInputData>({
+    resolver: zodResolver(updateInputSchema),
+  });
+
+  const {
     register: formAddInputAtProduct,
     control: controlOnEditProduct,
     handleSubmit: handleSubmitAddInputonEdit,
     formState: { errors: err },
+  } = useForm<CreateInputOnEditProps>({
+    resolver: zodResolver(createInputOnEditSchema),
+  });
+
+  const {
+    register: formAddInputAtProcessedProduct,
+    control: controlOnEditProcessedProduct,
+    handleSubmit: handleSubmitAddInputonEditProcessedProduct,
+    formState: { errors: error },
   } = useForm<CreateInputOnEditProps>({
     resolver: zodResolver(createInputOnEditSchema),
   });
@@ -207,6 +232,16 @@ export default function Products() {
   } = useFieldArray<CreateInputOnEditProps>({
     name: "input",
     control: controlOnEditProduct,
+    keyName: "id",
+  });
+
+  const {
+    fields: fieldsOnEditProductsProcessedProducts,
+    append: appendOnEditProcessedProducts,
+    remove: removeOnEditProcessedProducts,
+  } = useFieldArray<CreateInputOnEditProps>({
+    name: "input",
+    control: controlOnEditProcessedProduct,
     keyName: "id",
   });
 
@@ -273,6 +308,15 @@ export default function Products() {
     setIsOpen(false);
   }
 
+  
+
+  function closeModalEditProducts() {
+    setModalEditProductsIsOpen(false);
+    setSelectedOptions([])
+    removeOnEditProducts();
+    setEditingInput(null);
+  }
+
   async function openModalEditFinalProduct(id: string) {
     setActiveIdFinalProduct(id);
     const response = await api.get(
@@ -284,23 +328,19 @@ export default function Products() {
     setModalEditProductsIsOpen(true);
   }
 
-  function closeModalEditProducts() {
-    setModalEditProductsIsOpen(false);
-    setSelectedOptions([])
-    removeOnEditProducts();
-    setEditingInput(null);
-  }
-
   async function openModalEditProcessedProduct(id: string) {
+    setActiveIdProcessedProduct(id)
     const response = await api.get(
       `/${router.query.restaurant}/processedproducts/get-processed-products-inputs/${id}`
     );
     setActiveProcessedProduct(response.data);
+    setActiveFinalProcessedProductPrice(response.data[0]?.processedProducts.sell_price_in_cents);
     setModalEditProcessedProduct(true);
   }
 
   function closeModalEditProcessedProduct() {
     setModalEditProcessedProduct(false);
+    setSelectedOptions([])
   }
 
   const queryClient = useQueryClient();
@@ -365,6 +405,39 @@ export default function Products() {
     setEditingInput(null);
   }
 
+  async function onSubmitFormEditProductInputProcessedProducts(data: updateProductInputData) {
+    try {
+      await api
+        .put(`${restaurantURL}/processedproducts/edit-processed-product-input`, {
+          id: editingInput,
+          cost_in_cents: Number(Object.values(data.cost_in_cents)),
+          name: String(Object.values(data.name)),
+          und: String(Object.values(data.und)),
+          quantity: Number(Object.values(data.quantity)),
+          prev_sell_price_in_cents_final_product: activeFinalProcessedProductPrice,
+        })
+        .then((response) => {
+          const updatedInput = response.data;
+          setActiveFinalProcessedProductPrice(updatedInput.processedProducts.sell_price_in_cents);
+          setActiveProcessedProduct((prevState) =>
+            prevState?.map((input) =>
+              input.id === updatedInput.id
+                ? {
+                    ...input,
+                    inputs: updatedInput.inputs,
+                    quantity: updatedInput.quantity,
+                  }
+                : input
+            )
+          );
+        });
+    } catch (error) {
+      console.log(error);
+    }
+    queryClient.invalidateQueries(["processed_products"]);
+    setEditingInput(null);
+  }
+
   async function onSubmitFormAddInputOnEditProduct(
     data: CreateInputOnEditProps
   ) {
@@ -395,6 +468,24 @@ export default function Products() {
     queryClient.invalidateQueries(["final_products"]);
     removeOnEditProducts();
   }
+
+  async function onSubmitFormAddInputOnEditProcessedProduct(data: CreateInputOnEditProps) { 
+    try {
+      await api
+        .post(`${restaurantURL}/processedproducts/create-input-processed-product`, {
+          input: data.input,
+          id: activeIdProcessedProduct,
+        })
+        .then((response) =>
+          setActiveProcessedProduct((prev) => [...prev, response.data].flat())
+        );
+    } catch (error) {
+      console.log(error);
+    }
+    queryClient.invalidateQueries(["processed_products"]);
+    removeOnEditProcessedProducts();
+  }
+
   useEffect(() => {
     if (formState.isSubmitSuccessful) {
       reset();
@@ -455,6 +546,7 @@ export default function Products() {
   if (isLoading) {
     return <h1>carregando</h1>;
   }
+
 
   return (
     <>
@@ -607,7 +699,8 @@ export default function Products() {
             activeFinalProduct.some((item) => item.input !== null) ? (
               <>
                 <h1>Insumos</h1>
-                {activeFinalProduct.map((input) => {
+                {activeFinalProduct.filter(input => input.input).map((input) => {
+                  console.log(input)
                   {
                     return editingInput === input.id ? (
                       <form
@@ -710,7 +803,7 @@ export default function Products() {
             ) ? (
               <>
                 <h1>Produtos processados</h1>
-                {activeFinalProduct.map((input) => {
+                {activeFinalProduct.filter(input => input.processedProducts).map((input) => {
                   return <p>{input.processedProducts?.name}</p>;
                 })}
               </>
@@ -746,6 +839,7 @@ export default function Products() {
                           selectedOptions
                             .map((item) => item.value)
                             .includes(option.value) || activeFinalProduct.map((item) => item.input?.id)
+                            .includes(option.value) ||  activeFinalProduct.map((item) => item.processedProducts?.id)
                             .includes(option.value)
                         }
                         hideSelectedOptions={true}
@@ -816,27 +910,204 @@ export default function Products() {
           contentLabel="Example Modal"
           ariaHideApp={false}
         >
-          {activeProcessedProduct &&
-          activeProcessedProduct.some((item) => item.inputs !== null) ? (
-            <>
-              <h1>Insumos</h1>
-              {activeProcessedProduct.map((input) => {
-                return <p>{input.inputs?.name}</p>;
-              })}
-            </>
-          ) : null}
+          <>
+            {activeProcessedProduct &&
+            activeProcessedProduct.some((item) => item.inputs !== null) ? (
+              <>
+                <h1>Insumos</h1>
+                {activeProcessedProduct.filter(input => input.inputs).map((input) => {
+                  {
+                    return editingInput === input.id ? (
+                      <form
+                        onSubmit={handleEditInputProcessedProducts(onSubmitFormEditProductInputProcessedProducts)}
+                        key={input.inputs?.id}
+                      >
+                        <label htmlFor={`name-${input.id}`}>
+                          Nome
+                          <input
+                            type="text"
+                            id={`name-${input.id}`}
+                            defaultValue={input.inputs?.name}
+                            {...formEditInputProcessedProducts(
+                              `name.${input.id}` as keyof updateProductInputData
+                            )}
+                          />
+                        </label>
+                        <label htmlFor={`quantity-${input.id}`}>
+                          Quantidade
+                          <input
+                            type="number"
+                            id={`quantity-${input.id}`}
+                            defaultValue={input.quantity}
+                            {...formEditInputProcessedProducts(
+                              `quantity.${input.id}` as keyof updateProductInputData,
+                              {
+                                valueAsNumber: true,
+                              }
+                            )}
+                          />
+                        </label>
+                        <label htmlFor={`und-${input.id}`}>
+                          Unidade
+                          <input
+                            type="text"
+                            id={`und-${input.id}`}
+                            defaultValue={input.inputs?.und}
+                            {...formEditInputProcessedProducts(
+                              `und.${input.id}` as keyof updateProductInputData
+                            )}
+                          />
+                        </label>
+                        <label htmlFor={`cost_in_cents-${input.id}`}>
+                          Custo por UND
+                          <input
+                            type="number"
+                            id={`cost_in_cents-${input.id}`}
+                            defaultValue={input.inputs?.cost_in_cents}
+                            {...formEditInputProcessedProducts(
+                              `cost_in_cents.${input.id}` as keyof updateProductInputData,
+                              {
+                                valueAsNumber: true,
+                              }
+                            )}
+                          />
+                        </label>
+                        <button
+                          onClick={() => {
+                            reset();
+                            setEditingInput(null);
+                          }}
+                        >
+                          Cancelar
+                        </button>
+                        <button type="submit"> Salvar </button>
+                      </form>
+                    ) : (
+                      <div key={input.id}>
+                        <div>
+                          <span>Nome: {input.inputs?.name} </span>
+                          <span> Quantidade: {input.quantity} </span>
+                          <span>Unidade: {input.inputs?.und} </span>
+                          <span>Custo UND: {input.inputs?.cost_in_cents} </span>
+                          <button onClick={() => setEditingInput(input.id)}>
+                            Editar
+                          </button>
+                          <button
+                           
+                          >
+                            Excluir
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+                })}
+              </>
+            ) : null}
 
-          {activeProcessedProduct &&
-          activeProcessedProduct.some(
-            (item) => item.processedProductsAsInput !== null
-          ) ? (
-            <>
-              <h1>Produtos Processados</h1>
-              {activeProcessedProduct.map((input) => {
-                return <p>{input.processedProductsAsInput?.name}</p>;
-              })}
-            </>
-          ) : null}
+            {activeProcessedProduct &&
+            activeProcessedProduct.some(
+              (item) => item.processedProductsAsInput !== null
+            ) ? (
+              <>
+                <h1>Produtos processados</h1>
+                {activeProcessedProduct.filter(input => input.processedProductsAsInput).map((input) => {
+                  return <p>{input.processedProductsAsInput?.name}</p>;
+                })}
+              </>
+            ) : null}
+          </>
+
+          <form
+            onSubmit={handleSubmitAddInputonEditProcessedProduct(
+              onSubmitFormAddInputOnEditProcessedProduct
+            )}
+          >
+            {fieldsOnEditProductsProcessedProducts.map((input, index) => {
+              return (
+                <div key={input.id}>
+                  <Controller
+                    control={controlOnEditProcessedProduct}
+                    name={`input.${index}` as const}
+                    render={({ field: { onChange, value } }) => (
+                      <Select
+                        options={groupedOptions}
+                        value={groupedOptions.find(
+                          (c) =>
+                            value ===
+                            c.options.find(
+                              (item) => item.value === value?.value
+                            )
+                        )}
+                        onChange={(option: any) => {
+                          onChange(option);
+                          onChangeOptionSelect(option.value, index);
+                        }}
+                        isOptionDisabled={(option: any) =>
+                          selectedOptions
+                            .map((item) => item.value)
+                            .includes(option.value) || activeProcessedProduct!.map((item) => item.inputs?.id)
+                            .includes(option.value) || activeProcessedProduct!.map((item) => item.processedProductsAsInput?.id).includes(option.value)
+                        }
+                        hideSelectedOptions={true}
+                      />
+                    )}
+                  />
+                  <input
+                    type="number"
+                    {...formAddInputAtProcessedProduct(`input.${index}.quantity`, {
+                      valueAsNumber: true,
+                    })}
+                    placeholder="Quantidade"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newSelectedOptions = selectedOptions.filter(
+                        (item) => item.index !== index
+                      );
+                      const newOptions = newSelectedOptions.map((item) => {
+                        if (item.index > index) {
+                          item.index--;
+                        }
+                        return item;
+                      });
+                      setSelectedOptions([...newOptions]);
+                      removeOnEditProcessedProducts(index);
+                    }}
+                  >
+                    REMOVER
+                  </button>
+                </div>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={() =>
+                appendOnEditProcessedProducts({
+                  quantity: 0,
+                  value: "",
+                  label: "",
+                  input_type: "",
+                })
+              }
+            >
+              Adicionar novo insumo
+            </button>
+
+            <button type="submit">Salvar novo(s) insumo(s)</button>
+          </form>
+
+          <div>
+            {" "}
+            <h1>
+              {" "}
+              Preço final: R$
+        
+            </h1>
+          </div>
         </Modal>
       </div>
     </>
