@@ -39,16 +39,16 @@ interface ProcessedProductsInputsProps {
   inputs?: {
     id: string;
     name: string;
-    und: string; 
+    und: string;
     cost_in_cents: number;
   };
   processedProductsAsInput?: {
     id: string;
     name: string;
   };
-  processedProducts: { 
+  processedProducts: {
     sell_price_in_cents: number;
-  }
+  };
 }
 
 interface GroupedOptionProps {
@@ -111,6 +111,7 @@ interface CreateInputOnEditProps {
   }[];
 }
 
+
 const createInputOnEditSchema = z.object({
   input: z
     .object({
@@ -121,6 +122,17 @@ const createInputOnEditSchema = z.object({
     })
     .array(),
 });
+
+const updateQuantitySchema = z.object({ 
+  quantity: z.record(z.number())
+})
+
+interface updateQuantityData { 
+  quantity: {
+    [key: string]: number;
+  };
+}
+
 
 const customStyles = {
   content: {
@@ -143,12 +155,15 @@ export default function Products() {
   >([]);
   const [activeFinalProductPrice, setActiveFinalProductPrice] =
     useState<number>();
-    const [activeFinalProcessedProductPrice, setActiveFinalProcessedProductPrice] =
-    useState<number>();
+  const [
+    activeFinalProcessedProductPrice,
+    setActiveFinalProcessedProductPrice,
+  ] = useState<number>();
   const [modalEditProcessedProduct, setModalEditProcessedProduct] =
     useState(false);
-  const [activeProcessedProduct, setActiveProcessedProduct] =
-    useState<ProcessedProductsInputsProps[]>([]);
+  const [activeProcessedProduct, setActiveProcessedProduct] = useState<
+    ProcessedProductsInputsProps[]
+  >([]);
   const [editingInput, setEditingInput] = useState<string | null | undefined>(
     null
   );
@@ -156,7 +171,8 @@ export default function Products() {
     SelectedOptionsProps[]
   >([]);
   const [activeIdFinalProduct, setActiveIdFinalProduct] = useState<string>("");
-  const [activeIdProcessedProduct, setActiveIdProcessedProduct] = useState<string>("");
+  const [activeIdProcessedProduct, setActiveIdProcessedProduct] =
+    useState<string>("");
 
   function onChangeOptionSelect(value: string, index: number) {
     const newSelectedOptions = [...selectedOptions];
@@ -205,6 +221,14 @@ export default function Products() {
     formState: { errors: err },
   } = useForm<CreateInputOnEditProps>({
     resolver: zodResolver(createInputOnEditSchema),
+  });
+
+  const {
+    register: formEditQuantityProductInput,
+    handleSubmit: handleSubmitEditQuantityProductInput,
+    formState: { errors: errorsz },
+  } = useForm<updateQuantityData>({
+    resolver: zodResolver(updateQuantitySchema),
   });
 
   const {
@@ -308,11 +332,9 @@ export default function Products() {
     setIsOpen(false);
   }
 
-  
-
   function closeModalEditProducts() {
     setModalEditProductsIsOpen(false);
-    setSelectedOptions([])
+    setSelectedOptions([]);
     removeOnEditProducts();
     setEditingInput(null);
   }
@@ -323,24 +345,24 @@ export default function Products() {
       `/${router.query.restaurant}/products/get-final-products-inputs/${id}`
     );
     setActiveFinalProduct(response.data);
-    setActiveFinalProductPrice(response.data[0]?.product.sell_price_in_cents);
-    console.log(response.data);
     setModalEditProductsIsOpen(true);
   }
 
   async function openModalEditProcessedProduct(id: string) {
-    setActiveIdProcessedProduct(id)
+    setActiveIdProcessedProduct(id);
     const response = await api.get(
       `/${router.query.restaurant}/processedproducts/get-processed-products-inputs/${id}`
     );
     setActiveProcessedProduct(response.data);
-    setActiveFinalProcessedProductPrice(response.data[0]?.processedProducts.sell_price_in_cents);
+    setActiveFinalProcessedProductPrice(
+      response.data[0]?.processedProducts.sell_price_in_cents
+    );
     setModalEditProcessedProduct(true);
   }
 
   function closeModalEditProcessedProduct() {
     setModalEditProcessedProduct(false);
-    setSelectedOptions([])
+    setSelectedOptions([]);
   }
 
   const queryClient = useQueryClient();
@@ -405,20 +427,28 @@ export default function Products() {
     setEditingInput(null);
   }
 
-  async function onSubmitFormEditProductInputProcessedProducts(data: updateProductInputData) {
+  async function onSubmitFormEditProductInputProcessedProducts(
+    data: updateProductInputData
+  ) {
     try {
       await api
-        .put(`${restaurantURL}/processedproducts/edit-processed-product-input`, {
-          id: editingInput,
-          cost_in_cents: Number(Object.values(data.cost_in_cents)),
-          name: String(Object.values(data.name)),
-          und: String(Object.values(data.und)),
-          quantity: Number(Object.values(data.quantity)),
-          prev_sell_price_in_cents_final_product: activeFinalProcessedProductPrice,
-        })
+        .put(
+          `${restaurantURL}/processedproducts/edit-processed-product-input`,
+          {
+            id: editingInput,
+            cost_in_cents: Number(Object.values(data.cost_in_cents)),
+            name: String(Object.values(data.name)),
+            und: String(Object.values(data.und)),
+            quantity: Number(Object.values(data.quantity)),
+            prev_sell_price_in_cents_final_product:
+              activeFinalProcessedProductPrice,
+          }
+        )
         .then((response) => {
           const updatedInput = response.data;
-          setActiveFinalProcessedProductPrice(updatedInput.processedProducts.sell_price_in_cents);
+          setActiveFinalProcessedProductPrice(
+            updatedInput.processedProducts.sell_price_in_cents
+          );
           setActiveProcessedProduct((prevState) =>
             prevState?.map((input) =>
               input.id === updatedInput.id
@@ -469,13 +499,18 @@ export default function Products() {
     removeOnEditProducts();
   }
 
-  async function onSubmitFormAddInputOnEditProcessedProduct(data: CreateInputOnEditProps) { 
+  async function onSubmitFormAddInputOnEditProcessedProduct(
+    data: CreateInputOnEditProps
+  ) {
     try {
       await api
-        .post(`${restaurantURL}/processedproducts/create-input-processed-product`, {
-          input: data.input,
-          id: activeIdProcessedProduct,
-        })
+        .post(
+          `${restaurantURL}/processedproducts/create-input-processed-product`,
+          {
+            input: data.input,
+            id: activeIdProcessedProduct,
+          }
+        )
         .then((response) =>
           setActiveProcessedProduct((prev) => [...prev, response.data].flat())
         );
@@ -485,6 +520,12 @@ export default function Products() {
     queryClient.invalidateQueries(["processed_products"]);
     removeOnEditProcessedProducts();
   }
+
+  async function onSubmitFormUpdateQuantityProductInput(data: updateQuantityData) { 
+    console.log(data)
+  }
+
+
 
   useEffect(() => {
     if (formState.isSubmitSuccessful) {
@@ -546,7 +587,6 @@ export default function Products() {
   if (isLoading) {
     return <h1>carregando</h1>;
   }
-
 
   return (
     <>
@@ -699,101 +739,108 @@ export default function Products() {
             activeFinalProduct.some((item) => item.input !== null) ? (
               <>
                 <h1>Insumos</h1>
-                {activeFinalProduct.filter(input => input.input).map((input) => {
-                  console.log(input)
-                  {
-                    return editingInput === input.id ? (
-                      <form
-                        onSubmit={handleEditInput(onSubmitFormEditProductInput)}
-                        key={input.input?.id}
-                      >
-                        <label htmlFor={`name-${input.id}`}>
-                          Nome
-                          <input
-                            type="text"
-                            id={`name-${input.id}`}
-                            defaultValue={input.input?.name}
-                            {...formEditInput(
-                              `name.${input.id}` as keyof updateProductInputData
-                            )}
-                          />
-                        </label>
-                        <label htmlFor={`quantity-${input.id}`}>
-                          Quantidade
-                          <input
-                            type="number"
-                            id={`quantity-${input.id}`}
-                            defaultValue={input.quantity}
-                            {...formEditInput(
-                              `quantity.${input.id}` as keyof updateProductInputData,
-                              {
-                                valueAsNumber: true,
-                              }
-                            )}
-                          />
-                        </label>
-                        <label htmlFor={`und-${input.id}`}>
-                          Unidade
-                          <input
-                            type="text"
-                            id={`und-${input.id}`}
-                            defaultValue={input.input?.und}
-                            {...formEditInput(
-                              `und.${input.id}` as keyof updateProductInputData
-                            )}
-                          />
-                        </label>
-                        <label htmlFor={`cost_in_cents-${input.id}`}>
-                          Custo por UND
-                          <input
-                            type="number"
-                            id={`cost_in_cents-${input.id}`}
-                            defaultValue={input.input?.cost_in_cents}
-                            {...formEditInput(
-                              `cost_in_cents.${input.id}` as keyof updateProductInputData,
-                              {
-                                valueAsNumber: true,
-                              }
-                            )}
-                          />
-                        </label>
-                        <button
-                          onClick={() => {
-                            reset();
-                            setEditingInput(null);
-                          }}
+                {activeFinalProduct
+                  .filter((input) => input.input)
+                  .map((input) => {
+  
+                    {
+                      return editingInput === input.id ? (
+                        <form
+                          onSubmit={handleEditInput(
+                            onSubmitFormEditProductInput
+                          )}
+                          key={input.input?.id}
                         >
-                          Cancelar
-                        </button>
-                        <button type="submit"> Salvar </button>
-                      </form>
-                    ) : (
-                      <div key={input.id}>
-                        <div>
-                          <span>Nome: {input.input?.name} </span>
-                          <span> Quantidade: {input.quantity} </span>
-                          <span>Unidade: {input.input?.und} </span>
-                          <span>Custo UND: {input.input?.cost_in_cents} </span>
-                          <button onClick={() => setEditingInput(input.id)}>
-                            Editar
-                          </button>
+                          <label htmlFor={`name-${input.id}`}>
+                            Nome
+                            <input
+                              type="text"
+                              id={`name-${input.id}`}
+                              defaultValue={input.input?.name}
+                              {...formEditInput(
+                                `name.${input.id}` as keyof updateProductInputData
+                              )}
+                            />
+                          </label>
+                          <label htmlFor={`quantity-${input.id}`}>
+                            Quantidade
+                            <input
+                              type="number"
+                              id={`quantity-${input.id}`}
+                              defaultValue={input.quantity}
+                              {...formEditInput(
+                                `quantity.${input.id}` as keyof updateProductInputData,
+                                {
+                                  valueAsNumber: true,
+                                }
+                              )}
+                            />
+                          </label>
+                          <label htmlFor={`und-${input.id}`}>
+                            Unidade
+                            <input
+                              type="text"
+                              id={`und-${input.id}`}
+                              defaultValue={input.input?.und}
+                              {...formEditInput(
+                                `und.${input.id}` as keyof updateProductInputData
+                              )}
+                            />
+                          </label>
+                          <label htmlFor={`cost_in_cents-${input.id}`}>
+                            Custo por UND
+                            <input
+                              type="number"
+                              id={`cost_in_cents-${input.id}`}
+                              defaultValue={input.input?.cost_in_cents}
+                              {...formEditInput(
+                                `cost_in_cents.${input.id}` as keyof updateProductInputData,
+                                {
+                                  valueAsNumber: true,
+                                }
+                              )}
+                            />
+                          </label>
                           <button
-                            onClick={() =>
-                              deleteInputProduct(
-                                input.id,
-                                input.input
-                                  ? input.input?.cost_in_cents * input.quantity
-                                  : 0
-                              )
-                            }
+                            onClick={() => {
+                              reset();
+                              setEditingInput(null);
+                            }}
                           >
-                            Excluir
+                            Cancelar
                           </button>
+                          <button type="submit"> Salvar </button>
+                        </form>
+                      ) : (
+                        <div key={input.input?.id}>
+                          <div>
+                            <span>Nome: {input.input?.name} </span>
+                            <span> Quantidade: {input.quantity} </span>
+                            <span>Unidade: {input.input?.und} </span>
+                            <span>
+                              Custo UND: {input.input?.cost_in_cents}{" "}
+                            </span>
+                            <button onClick={() => setEditingInput(input.id)}>
+                              Editar
+                            </button>
+                            <button
+                              onClick={() =>
+                                deleteInputProduct(
+                                  input.id,
+                                  input.input
+                                    ? input.input?.cost_in_cents *
+                                        input.quantity
+                                    : 0
+                                )
+                              }
+                            >
+                              Excluir
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  }
-                })}
+                      );
+                    }
+                  })}
               </>
             ) : null}
 
@@ -803,9 +850,41 @@ export default function Products() {
             ) ? (
               <>
                 <h1>Produtos processados</h1>
-                {activeFinalProduct.filter(input => input.processedProducts).map((input) => {
-                  return <p>{input.processedProducts?.name}</p>;
-                })}
+                {activeFinalProduct
+                  .filter((input) => input.processedProducts)
+                  .map((input) => {
+                        return editingInput === input.id ? ( 
+                          <form onSubmit={handleSubmitEditQuantityProductInput(onSubmitFormUpdateQuantityProductInput)}
+                             key={input.id}
+                        > 
+                          <span>Nome: {input.processedProducts?.name} </span>
+                          <label htmlFor={`quantity-${input.id}`}>
+                            Quantidade
+                            <input
+                              type="number"
+                              id={`quantity-${input.id}`}
+                              defaultValue={input.quantity}
+                              {...formEditQuantityProductInput(
+                                `quantity.${input.id}` as keyof updateQuantityData,
+                                {
+                                  valueAsNumber: true,
+                                }
+                              )}
+                            />
+                          </label>
+                         
+                          <button onClick={() => setEditingInput(null)}>Cancelar </button>
+                          <button type="submit">Salvar</button>
+                          </form>
+                        ) : ( 
+                          <div>
+                      <span>Nome: {input.processedProducts?.name} </span>
+                      <span>Quantidade: {input.quantity} </span>
+                      <button onClick={() => setEditingInput(input.id)}>Editar </button>
+                      </div>
+                        )
+                  
+                  })}
               </>
             ) : null}
           </>
@@ -838,8 +917,12 @@ export default function Products() {
                         isOptionDisabled={(option: any) =>
                           selectedOptions
                             .map((item) => item.value)
-                            .includes(option.value) || activeFinalProduct.map((item) => item.input?.id)
-                            .includes(option.value) ||  activeFinalProduct.map((item) => item.processedProducts?.id)
+                            .includes(option.value) ||
+                          activeFinalProduct
+                            .map((item) => item.input?.id)
+                            .includes(option.value) ||
+                          activeFinalProduct
+                            .map((item) => item.processedProducts?.id)
                             .includes(option.value)
                         }
                         hideSelectedOptions={true}
@@ -915,93 +998,95 @@ export default function Products() {
             activeProcessedProduct.some((item) => item.inputs !== null) ? (
               <>
                 <h1>Insumos</h1>
-                {activeProcessedProduct.filter(input => input.inputs).map((input) => {
-                  {
-                    return editingInput === input.id ? (
-                      <form
-                        onSubmit={handleEditInputProcessedProducts(onSubmitFormEditProductInputProcessedProducts)}
-                        key={input.inputs?.id}
-                      >
-                        <label htmlFor={`name-${input.id}`}>
-                          Nome
-                          <input
-                            type="text"
-                            id={`name-${input.id}`}
-                            defaultValue={input.inputs?.name}
-                            {...formEditInputProcessedProducts(
-                              `name.${input.id}` as keyof updateProductInputData
-                            )}
-                          />
-                        </label>
-                        <label htmlFor={`quantity-${input.id}`}>
-                          Quantidade
-                          <input
-                            type="number"
-                            id={`quantity-${input.id}`}
-                            defaultValue={input.quantity}
-                            {...formEditInputProcessedProducts(
-                              `quantity.${input.id}` as keyof updateProductInputData,
-                              {
-                                valueAsNumber: true,
-                              }
-                            )}
-                          />
-                        </label>
-                        <label htmlFor={`und-${input.id}`}>
-                          Unidade
-                          <input
-                            type="text"
-                            id={`und-${input.id}`}
-                            defaultValue={input.inputs?.und}
-                            {...formEditInputProcessedProducts(
-                              `und.${input.id}` as keyof updateProductInputData
-                            )}
-                          />
-                        </label>
-                        <label htmlFor={`cost_in_cents-${input.id}`}>
-                          Custo por UND
-                          <input
-                            type="number"
-                            id={`cost_in_cents-${input.id}`}
-                            defaultValue={input.inputs?.cost_in_cents}
-                            {...formEditInputProcessedProducts(
-                              `cost_in_cents.${input.id}` as keyof updateProductInputData,
-                              {
-                                valueAsNumber: true,
-                              }
-                            )}
-                          />
-                        </label>
-                        <button
-                          onClick={() => {
-                            reset();
-                            setEditingInput(null);
-                          }}
+                {activeProcessedProduct
+                  .filter((input) => input.inputs)
+                  .map((input) => {
+                    {
+                      return editingInput === input.id ? (
+                        <form
+                          onSubmit={handleEditInputProcessedProducts(
+                            onSubmitFormEditProductInputProcessedProducts
+                          )}
+                          key={input.inputs?.id}
                         >
-                          Cancelar
-                        </button>
-                        <button type="submit"> Salvar </button>
-                      </form>
-                    ) : (
-                      <div key={input.id}>
-                        <div>
-                          <span>Nome: {input.inputs?.name} </span>
-                          <span> Quantidade: {input.quantity} </span>
-                          <span>Unidade: {input.inputs?.und} </span>
-                          <span>Custo UND: {input.inputs?.cost_in_cents} </span>
-                          <button onClick={() => setEditingInput(input.id)}>
-                            Editar
-                          </button>
+                          <label htmlFor={`name-${input.id}`}>
+                            Nome
+                            <input
+                              type="text"
+                              id={`name-${input.id}`}
+                              defaultValue={input.inputs?.name}
+                              {...formEditInputProcessedProducts(
+                                `name.${input.id}` as keyof updateProductInputData
+                              )}
+                            />
+                          </label>
+                          <label htmlFor={`quantity-${input.id}`}>
+                            Quantidade
+                            <input
+                              type="number"
+                              id={`quantity-${input.id}`}
+                              defaultValue={input.quantity}
+                              {...formEditInputProcessedProducts(
+                                `quantity.${input.id}` as keyof updateProductInputData,
+                                {
+                                  valueAsNumber: true,
+                                }
+                              )}
+                            />
+                          </label>
+                          <label htmlFor={`und-${input.id}`}>
+                            Unidade
+                            <input
+                              type="text"
+                              id={`und-${input.id}`}
+                              defaultValue={input.inputs?.und}
+                              {...formEditInputProcessedProducts(
+                                `und.${input.id}` as keyof updateProductInputData
+                              )}
+                            />
+                          </label>
+                          <label htmlFor={`cost_in_cents-${input.id}`}>
+                            Custo por UND
+                            <input
+                              type="number"
+                              id={`cost_in_cents-${input.id}`}
+                              defaultValue={input.inputs?.cost_in_cents}
+                              {...formEditInputProcessedProducts(
+                                `cost_in_cents.${input.id}` as keyof updateProductInputData,
+                                {
+                                  valueAsNumber: true,
+                                }
+                              )}
+                            />
+                          </label>
                           <button
-                           
+                            onClick={() => {
+                              reset();
+                              setEditingInput(null);
+                            }}
                           >
-                            Excluir
+                            Cancelar
                           </button>
+                          <button type="submit"> Salvar </button>
+                        </form>
+                      ) : (
+                        <div key={input.id}>
+                          <div>
+                            <span>Nome: {input.inputs?.name} </span>
+                            <span> Quantidade: {input.quantity} </span>
+                            <span>Unidade: {input.inputs?.und} </span>
+                            <span>
+                              Custo UND: {input.inputs?.cost_in_cents}{" "}
+                            </span>
+                            <button onClick={() => setEditingInput(input.id)}>
+                              Editar
+                            </button>
+                            <button>Excluir</button>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  }
-                })}
+                      );
+                    }
+                  })}
               </>
             ) : null}
 
@@ -1011,9 +1096,11 @@ export default function Products() {
             ) ? (
               <>
                 <h1>Produtos processados</h1>
-                {activeProcessedProduct.filter(input => input.processedProductsAsInput).map((input) => {
-                  return <p>{input.processedProductsAsInput?.name}</p>;
-                })}
+                {activeProcessedProduct
+                  .filter((input) => input.processedProductsAsInput)
+                  .map((input) => {
+                    return <p>{input.processedProductsAsInput?.name}</p>;
+                  })}
               </>
             ) : null}
           </>
@@ -1046,8 +1133,13 @@ export default function Products() {
                         isOptionDisabled={(option: any) =>
                           selectedOptions
                             .map((item) => item.value)
-                            .includes(option.value) || activeProcessedProduct!.map((item) => item.inputs?.id)
-                            .includes(option.value) || activeProcessedProduct!.map((item) => item.processedProductsAsInput?.id).includes(option.value)
+                            .includes(option.value) ||
+                          activeProcessedProduct
+                            .map((item) => item.inputs?.id)
+                            .includes(option.value) ||
+                          activeProcessedProduct
+                            .map((item) => item.processedProductsAsInput?.id)
+                            .includes(option.value)
                         }
                         hideSelectedOptions={true}
                       />
@@ -1055,9 +1147,12 @@ export default function Products() {
                   />
                   <input
                     type="number"
-                    {...formAddInputAtProcessedProduct(`input.${index}.quantity`, {
-                      valueAsNumber: true,
-                    })}
+                    {...formAddInputAtProcessedProduct(
+                      `input.${index}.quantity`,
+                      {
+                        valueAsNumber: true,
+                      }
+                    )}
                     placeholder="Quantidade"
                   />
 
@@ -1102,11 +1197,7 @@ export default function Products() {
 
           <div>
             {" "}
-            <h1>
-              {" "}
-              Preço final: R$
-        
-            </h1>
+            <h1> Preço final: R$</h1>
           </div>
         </Modal>
       </div>

@@ -11,7 +11,7 @@ const updateInputSchema = z.object({
   name: z.string(),
   und: z.string(),
   quantity: z.number(),
-  prev_sell_price_in_cents_final_product: z.number(),
+ 
 });
 
 export default async function UpdateInput(
@@ -29,7 +29,7 @@ export default async function UpdateInput(
   }
 
 
-  const { quantity, id, cost_in_cents, name, und, prev_sell_price_in_cents_final_product } = updateInputSchema.parse(
+  const { quantity, id, cost_in_cents, name, und } = updateInputSchema.parse(
     req.body
   );
 
@@ -47,11 +47,9 @@ export default async function UpdateInput(
     }
   })
 
-  console.log(prev_sell_price_in_cents_input)
+ 
 
-  const inputQuantity = prev_sell_price_in_cents_input ? prev_sell_price_in_cents_input.quantity : 0;
-  const inputCostInCents = prev_sell_price_in_cents_input?.input?.cost_in_cents ?? 0;
-  const sell_price_in_cents = (prev_sell_price_in_cents_final_product - (inputQuantity * inputCostInCents) + (quantity * cost_in_cents));
+ 
 
   const edit_inputs = await prisma.productsInputs.update({
    where: { 
@@ -59,11 +57,6 @@ export default async function UpdateInput(
    }, 
    data: { 
      quantity,
-     product: { 
-       update: { 
-         sell_price_in_cents,
-       },
-     },
      input: { 
        update: { 
          cost_in_cents,
