@@ -625,7 +625,7 @@ export default function Products() {
     }
   }
 
-  async function deleteInputProduct(id: string, cost?: number) {
+  async function deleteInputProduct(id: string) {
     if (confirm("Tem certeza que deseja excluir esse insumo?")) {
       await api.delete(`${restaurantURL}/products/delete-input-product`, {
         data: {
@@ -635,7 +635,7 @@ export default function Products() {
 
       setActiveFinalProduct((prev) => prev.filter((input) => input.id !== id));
 
-      await api.put(`${restaurantURL}/products/edit-price-on-delete-input`, {
+     /* await api.put(`${restaurantURL}/products/edit-price-on-delete-input`, {
         cost_in_cents: cost,
         finalProductId: activeIdFinalProduct,
       });
@@ -644,6 +644,20 @@ export default function Products() {
       queryClient.invalidateQueries(["final_products"]);
     } else {
       console.log("cancelado");
+    }*/
+  }
+  }
+
+  async function deleteInputProcessedProduct(id: string) {
+    if (confirm("Tem certeza que deseja excluir esse insumo?")) {
+      await api.delete(`${restaurantURL}/processedproducts/delete-processed-product-input`, {
+        data: {
+          id,
+        },
+      });
+
+      setActiveProcessedProduct((prev) => prev.filter((input) => input.id !== id));
+
     }
   }
 
@@ -889,12 +903,7 @@ export default function Products() {
                             <button
                               onClick={() =>
                                 deleteInputProduct(
-                                  input.id,
-                                  input.input
-                                    ? input.input?.cost_in_cents *
-                                        input.quantity
-                                    : 0
-                                )
+                                  input.id)
                               }
                             >
                               Excluir
@@ -945,6 +954,7 @@ export default function Products() {
                       <span>Nome: {input.processedProducts?.name} </span>
                       <span>Quantidade: {input.quantity} </span>
                       <button onClick={() => setEditingInput(input.id)}>Editar </button>
+                      <button onClick={() => deleteInputProduct(input.id)}>Excluir</button>
                       </div>
                         )
                   
@@ -1145,7 +1155,7 @@ export default function Products() {
                             <button onClick={() => setEditingInput(input.id)}>
                               Editar
                             </button>
-                            <button>Excluir</button>
+                            <button onClick={() => deleteInputProcessedProduct(input.id)}>Excluir</button>
                           </div>
                         </div>
                       );
@@ -1192,6 +1202,7 @@ export default function Products() {
                       <span>Nome: {input.processedProductsAsInput?.name} </span>
                       <span>Quantidade: {input.quantity} </span>
                       <button onClick={() => setEditingInput(input.id)}>Editar </button>
+                      <button onClick={() => deleteInputProcessedProduct(input.id)}>Excluir</button>
                       </div>
                         )
                   
