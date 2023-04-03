@@ -25,7 +25,7 @@ export default async function EditFinalProductPrice(
 
   const {id, quantity } = editProcessedProductQuantity.parse(req.body)
 
-  const edit_processed_product_quantity = await prisma.productsInputs.update({ 
+  const edit_processed_product_quantity = await prisma.processedProductsInputs.update({ 
     where: { 
       id,
     }, 

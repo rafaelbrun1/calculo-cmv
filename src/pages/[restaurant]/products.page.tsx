@@ -232,6 +232,14 @@ export default function Products() {
   });
 
   const {
+    register: formEditQuantityProcessedProductAsInput,
+    handleSubmit: handleSubmitEditQuantityProcessedProductAsInput,
+    formState: { errors: errorszs },
+  } = useForm<updateQuantityData>({
+    resolver: zodResolver(updateQuantitySchema),
+  });
+
+  const {
     register: formAddInputAtProcessedProduct,
     control: controlOnEditProcessedProduct,
     handleSubmit: handleSubmitAddInputonEditProcessedProduct,
@@ -522,9 +530,64 @@ export default function Products() {
   }
 
   async function onSubmitFormUpdateQuantityProductInput(data: updateQuantityData) { 
-    console.log(data)
+    try {
+      await api
+        .put(
+          `${restaurantURL}/products/edit-processedproductinput`,
+          {
+            id: editingInput,
+            quantity: Number(Object.values(data.quantity)),
+          }
+        )
+        .then((response) => {
+          console.log(response.data)
+         const updatedProcessedProduct = response.data;
+          setActiveFinalProduct((prevState) =>
+            prevState?.map((input) =>
+              input.id === updatedProcessedProduct.id
+                ? {
+                    ...input,
+                    quantity: updatedProcessedProduct.quantity,
+                  }
+                : input
+            )
+          );
+        });
+    } catch (error) {
+      console.log(error);
+    }
+    setEditingInput(null)
   }
 
+  async function onSubmitFormUpdateQuantityProcessedProductAsInput(data: updateQuantityData) { 
+    try {
+      await api
+        .put(
+          `${restaurantURL}/processedproducts/edit-processed-product-as-input`,
+          {
+            id: editingInput,
+            quantity: Number(Object.values(data.quantity)),
+          }
+        )
+        .then((response) => {
+        console.log(response.data)
+         const updatedProcessedProduct = response.data;
+          setActiveProcessedProduct((prevState) =>
+            prevState?.map((input) =>
+              input.id === updatedProcessedProduct.id
+                ? {
+                    ...input,
+                    quantity: updatedProcessedProduct.quantity,
+                  }
+                : input
+            )
+          );
+        });
+    } catch (error) {
+      console.log(error);
+    }
+    setEditingInput(null)
+  }
 
 
   useEffect(() => {
@@ -749,7 +812,7 @@ export default function Products() {
                           onSubmit={handleEditInput(
                             onSubmitFormEditProductInput
                           )}
-                          key={input.input?.id}
+                          key={input.id}
                         >
                           <label htmlFor={`name-${input.id}`}>
                             Nome
@@ -812,7 +875,7 @@ export default function Products() {
                           <button type="submit"> Salvar </button>
                         </form>
                       ) : (
-                        <div key={input.input?.id}>
+                        <div key={input.id}>
                           <div>
                             <span>Nome: {input.input?.name} </span>
                             <span> Quantidade: {input.quantity} </span>
@@ -868,6 +931,7 @@ export default function Products() {
                                 `quantity.${input.id}` as keyof updateQuantityData,
                                 {
                                   valueAsNumber: true,
+                                  shouldUnregister: true,
                                 }
                               )}
                             />
@@ -1099,7 +1163,38 @@ export default function Products() {
                 {activeProcessedProduct
                   .filter((input) => input.processedProductsAsInput)
                   .map((input) => {
-                    return <p>{input.processedProductsAsInput?.name}</p>;
+                        return editingInput === input.id ? ( 
+                          <form onSubmit={handleSubmitEditQuantityProcessedProductAsInput(onSubmitFormUpdateQuantityProcessedProductAsInput)}
+                             key={input.id}
+                        > 
+                          <span>Nome: {input.processedProductsAsInput?.name} </span>
+                          <label htmlFor={`quantity-${input.id}`}>
+                            Quantidade
+                            <input
+                              type="number"
+                              id={`quantity-${input.id}`}
+                              defaultValue={input.quantity}
+                              {...formEditQuantityProcessedProductAsInput (
+                                `quantity.${input.id}` as keyof updateQuantityData,
+                                {
+                                  valueAsNumber: true,
+                                  shouldUnregister: true,
+                                }
+                              )}
+                            />
+                          </label>
+                         
+                          <button onClick={() => setEditingInput(null)}>Cancelar </button>
+                          <button type="submit">Salvar</button>
+                          </form>
+                        ) : ( 
+                          <div>
+                      <span>Nome: {input.processedProductsAsInput?.name} </span>
+                      <span>Quantidade: {input.quantity} </span>
+                      <button onClick={() => setEditingInput(input.id)}>Editar </button>
+                      </div>
+                        )
+                  
                   })}
               </>
             ) : null}
