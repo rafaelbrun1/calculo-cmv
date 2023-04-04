@@ -28,9 +28,6 @@ interface ProductsInputsProps {
     id: string;
     name: string;
   };
-  product: {
-    sell_price_in_cents: number;
-  };
 }
 
 interface ProcessedProductsInputsProps {
@@ -133,6 +130,11 @@ interface updateQuantityData {
   };
 }
 
+const updateProducNameSchema = z.object({
+  name: z.string()
+})
+
+type updateNameData = z.infer<typeof updateProducNameSchema>;
 
 const customStyles = {
   content: {
@@ -154,7 +156,11 @@ export default function Products() {
     ProductsInputsProps[]
   >([]);
   const [activeFinalProductPrice, setActiveFinalProductPrice] =
-    useState<number>();
+    useState<string>('');
+    const [activeFinalProductName, setActiveFinalProductName] =
+    useState<string>('');
+    const [activeProcessedProductName, setActiveProcessedProductName] =
+    useState<string>('');
   const [
     activeFinalProcessedProductPrice,
     setActiveFinalProcessedProductPrice,
@@ -173,6 +179,7 @@ export default function Products() {
   const [activeIdFinalProduct, setActiveIdFinalProduct] = useState<string>("");
   const [activeIdProcessedProduct, setActiveIdProcessedProduct] =
     useState<string>("");
+  const [formNameIsOpen, setFormNameIsOpen] = useState<boolean>(false)
 
   function onChangeOptionSelect(value: string, index: number) {
     const newSelectedOptions = [...selectedOptions];
@@ -188,6 +195,20 @@ export default function Products() {
     }
     console.log(selectedOptions.entries());
   }
+
+  const {
+    register: formEditName,
+    handleSubmit: handleSubmitEditName,
+  } = useForm<updateNameData>({
+    resolver: zodResolver(updateProducNameSchema),
+  });
+
+  const {
+    register: formEditProcessedProductName,
+    handleSubmit: handleSubmitEditProcessedProductName,
+  } = useForm<updateNameData>({
+    resolver: zodResolver(updateProducNameSchema),
+  });
 
   const {
     register: formCreateProduct,
@@ -345,9 +366,11 @@ export default function Products() {
     setSelectedOptions([]);
     removeOnEditProducts();
     setEditingInput(null);
+    setFormNameIsOpen(false)
   }
 
-  async function openModalEditFinalProduct(id: string) {
+  async function openModalEditFinalProduct(id: string, name: string) {
+    setActiveFinalProductName(name)
     setActiveIdFinalProduct(id);
     const response = await api.get(
       `/${router.query.restaurant}/products/get-final-products-inputs/${id}`
@@ -356,7 +379,8 @@ export default function Products() {
     setModalEditProductsIsOpen(true);
   }
 
-  async function openModalEditProcessedProduct(id: string) {
+  async function openModalEditProcessedProduct(id: string, name: string) {
+    setActiveProcessedProductName(name)
     setActiveIdProcessedProduct(id);
     const response = await api.get(
       `/${router.query.restaurant}/processedproducts/get-processed-products-inputs/${id}`
@@ -371,6 +395,8 @@ export default function Products() {
   function closeModalEditProcessedProduct() {
     setModalEditProcessedProduct(false);
     setSelectedOptions([]);
+    removeOnEditProcessedProducts();
+    setEditingInput(null);
   }
 
   const queryClient = useQueryClient();
@@ -589,6 +615,34 @@ export default function Products() {
     setEditingInput(null)
   }
 
+  async function onSubmitFormUpdateProductName(data: updateNameData) { 
+    try {
+      await api.put(`${restaurantURL}/products/edit-final-product-name`, { 
+        id: activeIdFinalProduct, 
+        name: data.name
+      }).then(response => setActiveFinalProductName(response.data.name))
+    } catch (error) {
+      console.log(error)
+    }
+
+    queryClient.invalidateQueries(["final_products"]);
+    setFormNameIsOpen(false)
+  }
+
+  async function onSubmitFormUpdateProcessedProductName(data: updateNameData) { 
+    try {
+      await api.put(`${restaurantURL}/processedproducts/edit-processed-product-name`, { 
+        id: activeIdProcessedProduct, 
+        name: data.name
+      }).then(response => setActiveProcessedProductName(response.data.name))
+    } catch (error) {
+      console.log(error)
+    }
+
+    queryClient.invalidateQueries(["processed_products"]);
+    setFormNameIsOpen(false)
+  }
+
 
   useEffect(() => {
     if (formState.isSubmitSuccessful) {
@@ -674,7 +728,7 @@ export default function Products() {
           <div key={product.id}>
             <span> {product.name} </span>
             <span> {product.sell_price_in_cents} </span>
-            <button onClick={() => openModalEditFinalProduct(product.id)}>
+            <button onClick={() => openModalEditFinalProduct(product.id, product.name)}>
               {" "}
               Editar{" "}
             </button>
@@ -694,7 +748,7 @@ export default function Products() {
             <div key={item.id}>
               <span> {item.name} </span>
               <span> {item.sell_price_in_cents} </span>
-              <button onClick={() => openModalEditProcessedProduct(item.id)}>
+              <button onClick={() => openModalEditProcessedProduct(item.id, item.name)}>
                 {" "}
                 Editar{" "}
               </button>
@@ -812,14 +866,32 @@ export default function Products() {
           ariaHideApp={false}
         >
           <>
+          {!formNameIsOpen ? ( 
+            <> 
+            <h1>{activeFinalProductName}</h1>
+            <button onClick={() => setFormNameIsOpen(true)}>Editar</button>
+            </>
+          ) : ( 
+            <form onSubmit={handleSubmitEditName(onSubmitFormUpdateProductName)}>
+            <input type="text" defaultValue={activeFinalProductName}
+            {...formEditName('name', { 
+              shouldUnregister: true,
+            })}
+            />
+            <button onClick={() => setFormNameIsOpen(false)}>Cancelar</button>
+            <button type="submit"> Salvar </button>
+            </form>
+          )}
+
             {activeFinalProduct &&
             activeFinalProduct.some((item) => item.input !== null) ? (
               <>
-                <h1>Insumos</h1>
+              
+                <h2>Insumos</h2>
                 {activeFinalProduct
                   .filter((input) => input.input)
                   .map((input) => {
-  
+                     
                     {
                       return editingInput === input.id ? (
                         <form
@@ -1055,7 +1127,6 @@ export default function Products() {
             <h1>
               {" "}
               Preço final: R$
-              {activeFinalProductPrice}{" "}
             </h1>
           </div>
         </Modal>
@@ -1067,6 +1138,23 @@ export default function Products() {
           contentLabel="Example Modal"
           ariaHideApp={false}
         >
+
+            {!formNameIsOpen ? ( 
+            <> 
+            <h1>{activeProcessedProductName}</h1>
+            <button onClick={() => setFormNameIsOpen(true)}>Editar</button>
+            </>
+          ) : ( 
+            <form onSubmit={handleSubmitEditProcessedProductName(onSubmitFormUpdateProcessedProductName)}>
+            <input type="text" defaultValue={activeProcessedProductName}
+            {...formEditProcessedProductName('name', { 
+              shouldUnregister: true,
+            })}
+            />
+            <button onClick={() => setFormNameIsOpen(false)}>Cancelar</button>
+            <button type="submit"> Salvar </button>
+            </form>
+          )}
           <>
             {activeProcessedProduct &&
             activeProcessedProduct.some((item) => item.inputs !== null) ? (

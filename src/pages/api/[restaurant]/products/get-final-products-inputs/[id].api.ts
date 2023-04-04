@@ -32,15 +32,11 @@ export default async function GetFinalProductsInputs(
           name: true,
         },
       },
-      product: { 
-        select: { 
-          sell_price_in_cents: true,
-        },
-      }
     },
   });
 
-  console.log(final_products_inputs);
+  
+
 
   return res.json(final_products_inputs);
 }
