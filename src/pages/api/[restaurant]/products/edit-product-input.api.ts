@@ -4,14 +4,12 @@ import { unstable_getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "../../auth/[...nextauth].api";
 
-
 const updateInputSchema = z.object({
   id: z.string(),
   cost_in_cents: z.number(),
   name: z.string(),
   und: z.string(),
   quantity: z.number(),
- 
 });
 
 export default async function UpdateInput(
@@ -28,64 +26,36 @@ export default async function UpdateInput(
     return res.status(401).end();
   }
 
-
   const { quantity, id, cost_in_cents, name, und } = updateInputSchema.parse(
     req.body
   );
 
-  const prev_sell_price_in_cents_input = await prisma.productsInputs.findUnique({ 
-    where: { 
-      id,
-    }, 
-    select: { 
-      quantity: true,
-      input: { 
-        select: { 
-          cost_in_cents: true,
-        }
-      }
-    }
-  })
-
- 
-
- 
-
   const edit_inputs = await prisma.productsInputs.update({
-   where: { 
-     id,
-   }, 
-   data: { 
-     quantity,
-     input: { 
-       update: { 
-         cost_in_cents,
-         name,
-         und
-       }
-     }
-   }, 
-   select: { 
-     id: true,
-     quantity: true,
-     product: { 
-       select: { 
-         sell_price_in_cents: true,
-       },
-     },
-     input: { 
-       select: { 
-         cost_in_cents: true,
-         name: true,
-         und: true,
-       }
-     },
-   }
- });
-
-
-
- console.log(edit_inputs)
+    where: {
+      id,
+    },
+    data: {
+      quantity,
+      input: {
+        update: {
+          cost_in_cents,
+          name,
+          und,
+        },
+      },
+    },
+    select: {
+      id: true,
+      quantity: true,
+      input: {
+        select: {
+          cost_in_cents: true,
+          name: true,
+          und: true,
+        },
+      },
+    },
+  });
 
   return res.json(edit_inputs);
 }

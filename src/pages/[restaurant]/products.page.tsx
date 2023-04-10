@@ -57,6 +57,37 @@ interface ProductsProps {
   name: string;
   sell_price_in_cents: number;
 }
+
+interface ProcessedProductsProps { 
+  id: string; 
+  name: string; 
+  ProcessedProductsInputs?: { 
+    quantity: number;
+    inputs?: { 
+      name: string; 
+      cost_in_cents: number;
+    }
+    processedProductsAsInput?: { 
+      name: string; 
+      ProcessedProductsInputs: { 
+        quantity: number; 
+        inputs?: { 
+          name: string; 
+          cost_in_cents: number
+        }
+        ProcessedProductsInputs?: { 
+          quantity: number;
+          inputs: { 
+            name: string;
+            cost_in_cents: number;
+          }
+        }[]
+      }[]
+    }
+  }[]
+  }
+
+
 const createProductSchema = z.object({
   type: z.string(),
   product_name: z.string(),
@@ -149,6 +180,8 @@ const customStyles = {
   },
 };
 
+
+
 export default function Products() {
   const [modalIsOpen, setIsOpen] = useState(false);
   const [modalEditProductsIsOpen, setModalEditProductsIsOpen] = useState(false);
@@ -195,6 +228,7 @@ export default function Products() {
     }
     console.log(selectedOptions.entries());
   }
+
 
   const {
     register: formEditName,
@@ -437,11 +471,9 @@ export default function Products() {
           name: String(Object.values(data.name)),
           und: String(Object.values(data.und)),
           quantity: Number(Object.values(data.quantity)),
-          prev_sell_price_in_cents_final_product: activeFinalProductPrice,
         })
         .then((response) => {
           const updatedInput = response.data;
-          setActiveFinalProductPrice(updatedInput.product.sell_price_in_cents);
           setActiveFinalProduct((prevState) =>
             prevState.map((input) =>
               input.id === updatedInput.id
@@ -513,18 +545,6 @@ export default function Products() {
         })
         .then((response) =>
           setActiveFinalProduct((prev) => [...prev, response.data].flat())
-        );
-    } catch (error) {
-      console.log(error);
-    }
-    try {
-      await api
-        .put(`${restaurantURL}/products/edit-final-product-price`, {
-          input: data.input,
-          id: activeIdFinalProduct,
-        })
-        .then((response) =>
-          setActiveFinalProductPrice(response.data.sell_price_in_cents)
         );
     } catch (error) {
       console.log(error);
@@ -688,17 +708,6 @@ export default function Products() {
       });
 
       setActiveFinalProduct((prev) => prev.filter((input) => input.id !== id));
-
-     /* await api.put(`${restaurantURL}/products/edit-price-on-delete-input`, {
-        cost_in_cents: cost,
-        finalProductId: activeIdFinalProduct,
-      });
-
-      setActiveFinalProductPrice((prev) => (prev ?? 0) - (cost ?? 0));
-      queryClient.invalidateQueries(["final_products"]);
-    } else {
-      console.log("cancelado");
-    }*/
   }
   }
 
@@ -714,6 +723,9 @@ export default function Products() {
 
     }
   }
+
+  
+  
 
   if (isLoading) {
     return <h1>carregando</h1>;
@@ -1126,7 +1138,7 @@ export default function Products() {
             {" "}
             <h1>
               {" "}
-              Preço final: R$
+              Preço final: R$ 
             </h1>
           </div>
         </Modal>

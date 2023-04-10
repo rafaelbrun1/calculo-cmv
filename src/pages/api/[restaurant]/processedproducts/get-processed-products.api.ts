@@ -16,7 +16,49 @@ export default async function GetProcessedProducts(
       select: { 
         id: true,
         name: true, 
-        sell_price_in_cents: true,
+        ProcessedProductsInputs: { 
+          select: { 
+            quantity: true,
+            inputs: { 
+              select: { 
+                name: true,
+                cost_in_cents: true,
+              }
+            },
+            processedProductsAsInput: { 
+              select: { 
+                name: true,
+                ProcessedProductsInputs: { 
+                  select: { 
+                    quantity: true,
+                    inputs: { 
+                      select: { 
+                        name: true,
+                        cost_in_cents: true,
+                      }
+                    }, 
+                    processedProductsAsInput: { 
+                      select: { 
+                        name: true,
+                        ProcessedProductsInputs: { 
+                          select: { 
+                            quantity: true,
+                            inputs: { 
+                              select: { 
+                                name: true,
+                                cost_in_cents: true,
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }, 
       where: { 
         restaurantId 
