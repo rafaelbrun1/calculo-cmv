@@ -58,10 +58,19 @@ interface ProductsProps {
   sell_price_in_cents: number;
 }
 
+interface ProcessedProductsAsInputProps { 
+    quantity: number;
+    inputs: { 
+      name: string; 
+      cost_in_cents: number;
+    }
+    processedProductsAsInput?: ProcessedProductsAsInputProps[]
+}
+
 interface ProcessedProductsProps { 
   id: string; 
   name: string; 
-  ProcessedProductsInputs?: { 
+  ProcessedProductsInputs: { 
     quantity: number;
     inputs?: { 
       name: string; 
@@ -69,23 +78,10 @@ interface ProcessedProductsProps {
     }
     processedProductsAsInput?: { 
       name: string; 
-      ProcessedProductsInputs: { 
-        quantity: number; 
-        inputs?: { 
-          name: string; 
-          cost_in_cents: number
-        }
-        ProcessedProductsInputs?: { 
-          quantity: number;
-          inputs: { 
-            name: string;
-            cost_in_cents: number;
-          }
-        }[]
-      }[]
+      ProcessedProductsInputs: ProcessedProductsAsInputProps[];
     }
-  }[]
-  }
+   }[]
+ }
 
 
 const createProductSchema = z.object({
@@ -229,6 +225,38 @@ export default function Products() {
     console.log(selectedOptions.entries());
   }
 
+  
+  function calculateTotalPrice(processedProduct: any) {
+    let totalPrice = 0;
+    
+    // calcular o preço para o produto processado atual
+    if (processedProduct.ProcessedProductsInputs) {
+      for (const input of processedProduct.ProcessedProductsInputs) {
+        if (input.inputs) { 
+          totalPrice += input.quantity * input.inputs.cost_in_cents;
+        }
+      }
+    }
+    
+    // calcular o preço para os produtos processados como insumos
+    if (processedProduct.ProcessedProductsInputs) {
+      for (const input of processedProduct.ProcessedProductsInputs) {
+        if (input.processedProductsAsInput) { 
+          for (const subInput of input.processedProductsAsInput.ProcessedProductsInputs) { 
+            totalPrice += input.quantity * calculateTotalPrice({
+              id: "",
+              name: "",
+              ProcessedProductsInputs: [subInput]
+            });
+          }
+        }
+      }
+    }
+    
+    return totalPrice;
+  }
+  
+   
 
   const {
     register: formEditName,
@@ -355,16 +383,20 @@ export default function Products() {
     }
   );
 
+
+
   const {
     refetch,
     status,
     data: processed_products = [],
-  } = useQuery<ProductsProps[]>(["processed_products"], async () => {
+  } = useQuery<ProcessedProductsProps[]>(["processed_products"], async () => {
     const response = await api.get(
       `/${router.query.restaurant}/processedproducts/get-processed-products`
     );
     return response.data;
   });
+
+  console.log(processed_products)
 
   const groupedOptions: GroupedOptionProps[] = [
     {
@@ -758,8 +790,9 @@ export default function Products() {
         processed_products.map((item) => {
           return (
             <div key={item.id}>
-              <span> {item.name} </span>
-              <span> {item.sell_price_in_cents} </span>
+              <span> Nome: {item.name} </span>
+              <span> Quantidade de insumos: {item.ProcessedProductsInputs?.length} </span>
+              <span>Custo total do produto processado: {calculateTotalPrice(item)}</span>
               <button onClick={() => openModalEditProcessedProduct(item.id, item.name)}>
                 {" "}
                 Editar{" "}
